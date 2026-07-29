@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html>
 import React from "react";
 import {getUserA, getDashboard} from "./taskAnalytics.js";
 import TaskList from "./TaskList";
@@ -93,3 +95,5 @@ function StatCard({ label, value, color })
 }
 
 export default Dashboard;
+
+<html>
