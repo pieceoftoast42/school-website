@@ -1,8 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 function Home({ currentUser, setCurrentUser })
 {
   const [minutes, setMinutes] = useState("");
+  const [leaderboard, setLeaderboard] = useState([]);
+
+  const loadLeaderboard = () =>
+  {
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+
+    const sortedUsers = users.sort(
+      (a, b) => b.readingMinutes - a.readingMinutes
+    );
+
+    setLeaderboard(sortedUsers);
+  };
+
+
+  useEffect(() =>
+  {
+    loadLeaderboard();
+  }, []);
+
 
   const addMinutes = () =>
   {
@@ -14,7 +33,9 @@ function Home({ currentUser, setCurrentUser })
       return;
     }
 
+
     const users = JSON.parse(localStorage.getItem("users")) || [];
+
 
     const updatedUsers = users.map((user) =>
     {
@@ -26,24 +47,34 @@ function Home({ currentUser, setCurrentUser })
       {
         return {
           ...user,
-          readingMinutes: user.readingMinutes + amount,
+          readingMinutes: user.readingMinutes + amount
         };
       }
 
       return user;
     });
 
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
 
-    const updatedCurrentUser = {
+    localStorage.setItem(
+      "users",
+      JSON.stringify(updatedUsers)
+    );
+
+
+    const updatedCurrentUser =
+    {
       ...currentUser,
-      readingMinutes: currentUser.readingMinutes + amount,
+      readingMinutes: currentUser.readingMinutes + amount
     };
+
 
     setCurrentUser(updatedCurrentUser);
 
     setMinutes("");
+
+    loadLeaderboard();
   };
+
 
   const logout = () =>
   {
@@ -51,119 +82,149 @@ function Home({ currentUser, setCurrentUser })
     setCurrentUser(null);
   };
 
-  const styles =
-  {
-    container:
-    {
-      minHeight: "100vh",
-      backgroundColor: "#f5f5f5",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-
-    card:
-    {
-      backgroundColor: "white",
-      width: "500px",
-      padding: "40px",
-      borderRadius: "12px",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-      textAlign: "center",
-    },
-
-    title:
-    {
-      marginBottom: "25px",
-    },
-
-    input:
-    {
-      width: "100%",
-      padding: "10px",
-      marginTop: "15px",
-      marginBottom: "15px",
-      fontSize: "1rem",
-      borderRadius: "6px",
-      border: "1px solid #ccc",
-    },
-
-    button:
-    {
-      width: "100%",
-      padding: "10px",
-      backgroundColor: "#333",
-      color: "white",
-      border: "none",
-      borderRadius: "6px",
-      cursor: "pointer",
-      marginBottom: "10px",
-    },
-
-    logout:
-    {
-      width: "100%",
-      padding: "10px",
-      backgroundColor: "#c0392b",
-      color: "white",
-      border: "none",
-      borderRadius: "6px",
-      cursor: "pointer",
-    }
-  };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
+    <div style={{
+      minHeight:"100vh",
+      backgroundColor:"#f5f5f5",
+      padding:"40px"
+    }}>
 
-        <h1 style={styles.title}>
-          Rooted in Learning:
-          <br />
-          Growing Minds, Growing Futures
-        </h1>
+      <h1 style={{textAlign:"center"}}>
+        Rooted in Learning:
+        <br/>
+        Growing Minds, Growing Futures
+      </h1>
 
-        <h2>
-          Welcome {currentUser.firstName} {currentUser.lastName}!
-        </h2>
 
-        <h3>
-          Teacher: {currentUser.teacher}
-        </h3>
+      <h2 style={{textAlign:"center"}}>
+        Welcome {currentUser.firstName} {currentUser.lastName}
+      </h2>
 
-        <hr />
+      <h3 style={{textAlign:"center"}}>
+        Teacher: {currentUser.teacher}
+      </h3>
 
-        <h2>
-          Total Reading Minutes
-        </h2>
 
-        <h1>{currentUser.readingMinutes}</h1>
 
-        <input
-          type="number"
-          min="1"
-          placeholder="Enter reading minutes"
-          value={minutes}
-          onChange={(e) => setMinutes(e.target.value)}
-          style={styles.input}
-        />
+      <div style={{
+        display:"flex",
+        justifyContent:"center",
+        gap:"50px",
+        marginTop:"40px"
+      }}>
 
-        <button
-          onClick={addMinutes}
-          style={styles.button}
-        >
-          Add Minutes
-        </button>
 
-        <button
-          onClick={logout}
-          style={styles.logout}
-        >
-          Logout
-        </button>
+        {/* Reading Entry */}
+        <div style={{
+          background:"white",
+          padding:"30px",
+          width:"300px",
+          borderRadius:"12px",
+          textAlign:"center"
+        }}>
+
+          <h2>
+            Your Reading Minutes
+          </h2>
+
+          <h1>
+            {currentUser.readingMinutes}
+          </h1>
+
+
+          <input
+            type="number"
+            placeholder="Minutes read"
+            value={minutes}
+            onChange={(e)=>setMinutes(e.target.value)}
+            style={{
+              width:"90%",
+              padding:"10px"
+            }}
+          />
+
+
+          <button
+            onClick={addMinutes}
+            style={{
+              width:"100%",
+              marginTop:"15px",
+              padding:"10px"
+            }}
+          >
+            Add Minutes
+          </button>
+
+        </div>
+
+
+
+        {/* Leaderboard */}
+        <div style={{
+          background:"white",
+          padding:"30px",
+          width:"400px",
+          borderRadius:"12px"
+        }}>
+
+          <h2 style={{textAlign:"center"}}>
+            Leaderboard
+          </h2>
+
+
+          {leaderboard.map((student,index)=>(
+
+            <div
+              key={index}
+              style={{
+                padding:"10px",
+                borderBottom:"1px solid #ddd"
+              }}
+            >
+
+              <strong>
+                {index + 1}. {student.firstName}
+              </strong>
+
+              <br/>
+
+              Teacher:
+              {" "}
+              {student.teacher}
+
+              <br/>
+
+              Minutes:
+              {" "}
+              {student.readingMinutes}
+
+            </div>
+
+          ))}
+
+        </div>
+
 
       </div>
+
+
+
+      <button
+        onClick={logout}
+        style={{
+          display:"block",
+          margin:"40px auto",
+          padding:"10px 40px"
+        }}
+      >
+        Logout
+      </button>
+
+
     </div>
   );
 }
+
 
 export default Home;
