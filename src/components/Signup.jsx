@@ -5,6 +5,7 @@ function Signup({ setCurrentUser, switchToLogin })
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [teacher, setTeacher] = useState("");
+  const [parentInitials, setParentInitials] = useState("");
 
   const signup = (e) =>
   {
@@ -30,6 +31,7 @@ function Signup({ setCurrentUser, switchToLogin })
       firstName,
       lastName,
       teacher,
+      parentInitials: parentInitials.toUpperCase(),
       readingMinutes: 0
     };
 
@@ -98,6 +100,7 @@ function Signup({ setCurrentUser, switchToLogin })
         <h2>Create Student</h2>
 
         <form onSubmit={signup}>
+
           <input
             type="text"
             placeholder="First Name"
@@ -125,14 +128,31 @@ function Signup({ setCurrentUser, switchToLogin })
             style={styles.input}
           />
 
+          <input
+            type="text"
+            placeholder="Parent Initials"
+            required
+            maxLength="3"
+            value={parentInitials}
+            onChange={(e) =>
+              setParentInitials(e.target.value.toUpperCase())
+            }
+            style={styles.input}
+          />
+
           <button type="submit" style={styles.button}>
             Sign Up
           </button>
+
         </form>
 
-        <button style={styles.switchBtn} onClick={switchToLogin}>
+        <button
+          style={styles.switchBtn}
+          onClick={switchToLogin}
+        >
           Already Registered? Login
         </button>
+
       </div>
     </div>
   );
