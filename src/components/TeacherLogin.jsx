@@ -28,10 +28,9 @@ function TeacherLogin({ setTeacherLoggedIn, switchToStudentLogin })
         backgroundColor: "#f0f2f5",
       }}
     >
-
       <div
         style={{
-          background: "white",
+          background: "#ffffff",
           padding: "30px 40px",
           borderRadius: "12px",
           width: "350px",
@@ -39,11 +38,9 @@ function TeacherLogin({ setTeacherLoggedIn, switchToStudentLogin })
           textAlign: "center",
         }}
       >
-
         <h2>Teacher Sign In</h2>
 
         <form onSubmit={teacherLogin}>
-
           <input
             type="password"
             placeholder="Teacher Password"
@@ -75,7 +72,6 @@ function TeacherLogin({ setTeacherLoggedIn, switchToStudentLogin })
           >
             Teacher Sign In
           </button>
-
         </form>
 
         <button
@@ -91,9 +87,7 @@ function TeacherLogin({ setTeacherLoggedIn, switchToStudentLogin })
         >
           Back to Student Login
         </button>
-
       </div>
-
     </div>
   );
 }
