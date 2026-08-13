@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function Login({ setCurrentUser, switchToSignup })
+function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
 {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -38,6 +38,7 @@ function Login({ setCurrentUser, switchToSignup })
       alignItems: "center",
       backgroundColor: "#f0f2f5",
     },
+
     authCard:
     {
       background: "#ffffff",
@@ -47,6 +48,7 @@ function Login({ setCurrentUser, switchToSignup })
       boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
       textAlign: "center",
     },
+
     input:
     {
       width: "100%",
@@ -56,6 +58,7 @@ function Login({ setCurrentUser, switchToSignup })
       border: "1px solid #ccc",
       fontSize: "1rem",
     },
+
     button:
     {
       width: "100%",
@@ -68,6 +71,7 @@ function Login({ setCurrentUser, switchToSignup })
       cursor: "pointer",
       marginBottom: "10px",
     },
+
     switchBtn:
     {
       background: "transparent",
@@ -78,14 +82,27 @@ function Login({ setCurrentUser, switchToSignup })
       marginTop: "10px",
       fontSize: "0.9rem",
     },
+
+    teacherBtn:
+    {
+      background: "transparent",
+      border: "none",
+      color: "#555",
+      cursor: "pointer",
+      textDecoration: "underline",
+      marginTop: "15px",
+      fontSize: "0.9rem",
+    },
   };
 
   return (
     <div style={styles.authContainer}>
       <div style={styles.authCard}>
+
         <h2>Student Login</h2>
 
         <form onSubmit={login}>
+
           <input
             type="text"
             placeholder="First Name"
@@ -116,11 +133,25 @@ function Login({ setCurrentUser, switchToSignup })
           <button type="submit" style={styles.button}>
             Login
           </button>
+
         </form>
 
-        <button style={styles.switchBtn} onClick={switchToSignup}>
+        <button
+          style={styles.switchBtn}
+          onClick={switchToSignup}
+        >
           New Student? Sign Up
         </button>
+
+        <br />
+
+        <button
+          style={styles.teacherBtn}
+          onClick={switchToTeacherLogin}
+        >
+          Teacher Sign In
+        </button>
+
       </div>
     </div>
   );
