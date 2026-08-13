@@ -9,6 +9,9 @@ function App()
 {
   const [currentUser, setCurrentUser] = useState(null);
   const [showLogin, setShowLogin] = useState(true);
+
+  // Teacher states
+  const [showTeacherLogin, setShowTeacherLogin] = useState(false);
   const [teacherLoggedIn, setTeacherLoggedIn] = useState(false);
 
   useEffect(() =>
@@ -41,10 +44,17 @@ function App()
     }
   }, [currentUser]);
 
+
+  // Teacher has successfully entered the password
   if (teacherLoggedIn)
   {
     return (
-      <div style={{ padding: "50px", textAlign: "center" }}>
+      <div
+        style={{
+          padding: "50px",
+          textAlign: "center"
+        }}
+      >
         <h1>Teacher Dashboard</h1>
 
         <p>
@@ -60,6 +70,24 @@ function App()
     );
   }
 
+
+  // Show the teacher password page
+  if (showTeacherLogin)
+  {
+    return (
+      <TeacherLogin
+        setTeacherLoggedIn={setTeacherLoggedIn}
+        switchToStudentLogin={() =>
+        {
+          setShowTeacherLogin(false);
+          setShowLogin(true);
+        }}
+      />
+    );
+  }
+
+
+  // Student login/signup
   if (!currentUser)
   {
     if (!showLogin)
@@ -76,11 +104,13 @@ function App()
       <Login
         setCurrentUser={setCurrentUser}
         switchToSignup={() => setShowLogin(false)}
-        switchToTeacherLogin={() => setTeacherLoggedIn("login")}
+        switchToTeacherLogin={() => setShowTeacherLogin(true)}
       />
     );
   }
 
+
+  // Student home page
   return (
     <Home
       currentUser={currentUser}
