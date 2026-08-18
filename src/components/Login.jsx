@@ -1,23 +1,36 @@
 import React, { useState } from "react";
 
-function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
+function Login({
+  setCurrentUser,
+  switchToSignup,
+  switchToTeacherLogin
+})
 {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [teacher, setTeacher] = useState("");
 
+
   const login = (e) =>
   {
     e.preventDefault();
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const users =
+      JSON.parse(localStorage.getItem("users")) || [];
+
 
     const match = users.find(
       (u) =>
-        u.firstName.toLowerCase() === firstName.toLowerCase() &&
-        u.lastName.toLowerCase() === lastName.toLowerCase() &&
-        u.teacher.toLowerCase() === teacher.toLowerCase()
+        u.firstName.trim().toLowerCase() ===
+          firstName.trim().toLowerCase() &&
+
+        u.lastName.trim().toLowerCase() ===
+          lastName.trim().toLowerCase() &&
+
+        u.teacher.trim().toLowerCase() ===
+          teacher.trim().toLowerCase()
     );
+
 
     if (!match)
     {
@@ -25,8 +38,10 @@ function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
       return;
     }
 
+
     setCurrentUser(match);
   };
+
 
   const styles =
   {
@@ -45,7 +60,8 @@ function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
       padding: "30px 40px",
       borderRadius: "12px",
       width: "350px",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      boxShadow:
+        "0 4px 12px rgba(0,0,0,0.15)",
       textAlign: "center",
     },
 
@@ -57,6 +73,7 @@ function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
       borderRadius: "6px",
       border: "1px solid #ccc",
       fontSize: "1rem",
+      boxSizing: "border-box",
     },
 
     button:
@@ -95,11 +112,14 @@ function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
     },
   };
 
+
   return (
     <div style={styles.authContainer}>
+
       <div style={styles.authCard}>
 
         <h2>Student Login</h2>
+
 
         <form onSubmit={login}>
 
@@ -108,33 +128,46 @@ function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
             placeholder="First Name"
             required
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={(e) =>
+              setFirstName(e.target.value)
+            }
             style={styles.input}
           />
+
 
           <input
             type="text"
             placeholder="Last Name"
             required
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={(e) =>
+              setLastName(e.target.value)
+            }
             style={styles.input}
           />
+
 
           <input
             type="text"
             placeholder="Teacher"
             required
             value={teacher}
-            onChange={(e) => setTeacher(e.target.value)}
+            onChange={(e) =>
+              setTeacher(e.target.value)
+            }
             style={styles.input}
           />
 
-          <button type="submit" style={styles.button}>
+
+          <button
+            type="submit"
+            style={styles.button}
+          >
             Login
           </button>
 
         </form>
+
 
         <button
           style={styles.switchBtn}
@@ -143,7 +176,9 @@ function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
           New Student? Sign Up
         </button>
 
+
         <br />
+
 
         <button
           style={styles.teacherBtn}
@@ -153,6 +188,7 @@ function Login({ setCurrentUser, switchToSignup, switchToTeacherLogin })
         </button>
 
       </div>
+
     </div>
   );
 }
