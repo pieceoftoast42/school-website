@@ -4,43 +4,63 @@ function TeacherDashboard({ setTeacherLoggedIn })
 {
   const [selectedTeacher, setSelectedTeacher] = useState("All");
 
-  const users = JSON.parse(localStorage.getItem("users")) || [];
+  const users =
+    JSON.parse(localStorage.getItem("users")) || [];
 
-  // Create a list of teachers without duplicates,
-  // ignoring capitalization
+
+
   const teacherMap = {};
 
   users.forEach((student) =>
   {
-    const teacherName = student.teacher.trim();
-    const teacherKey = teacherName.toLowerCase();
+    if (!student.teacher)
+    {
+      return;
+    }
+
+    const teacherName =
+      student.teacher.trim();
+
+    const teacherKey =
+      teacherName.toLowerCase();
 
     if (!teacherMap[teacherKey])
     {
-      teacherMap[teacherKey] = teacherName;
+      teacherMap[teacherKey] =
+        teacherName;
     }
   });
 
-  const teachers = Object.values(teacherMap).sort(
-    (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
-  );
 
 
-  // Filter students by teacher, ignoring capitalization
+  const teachers =
+    Object.values(teacherMap).sort(
+      (a, b) =>
+        a.toLowerCase().localeCompare(
+          b.toLowerCase()
+        )
+    );
+
+
+
   const filteredStudents =
     selectedTeacher === "All"
       ? users
       : users.filter(
           (student) =>
+            student.teacher &&
             student.teacher.trim().toLowerCase() ===
-            selectedTeacher.trim().toLowerCase()
+              selectedTeacher.trim().toLowerCase()
         );
 
 
-  // Sort highest reading minutes first
-  const sortedStudents = [...filteredStudents].sort(
-    (a, b) => b.readingMinutes - a.readingMinutes
-  );
+ 
+  const sortedStudents =
+    [...filteredStudents].sort(
+      (a, b) =>
+        (b.readingMinutes || 0) -
+        (a.readingMinutes || 0)
+    );
 
 
   return (
@@ -49,32 +69,54 @@ function TeacherDashboard({ setTeacherLoggedIn })
         minHeight: "100vh",
         backgroundColor: "#f5f5f5",
         padding: "40px",
+        boxSizing: "border-box",
       }}
     >
 
-      <h1 style={{ textAlign: "center" }}>
+      {/* Page Title */}
+
+      <h1
+        style={{
+          textAlign: "center",
+          marginBottom: "10px",
+        }}
+      >
         Teacher Dashboard
       </h1>
 
-      <h2 style={{ textAlign: "center" }}>
+
+      <h2
+        style={{
+          textAlign: "center",
+          marginBottom: "30px",
+        }}
+      >
         Reading Scoreboard
       </h2>
 
 
-      {/* Teacher Filter */}
+
+      {/* Teacher Dropdown */}
+
       <div
         style={{
-          background: "white",
+          backgroundColor: "white",
           padding: "20px",
           borderRadius: "12px",
           width: "400px",
-          margin: "30px auto",
+          maxWidth: "90%",
+          margin: "0 auto 30px auto",
           textAlign: "center",
+          boxShadow:
+            "0 2px 8px rgba(0,0,0,0.15)",
+          boxSizing: "border-box",
         }}
       >
 
         <label>
-          <strong>Sort by Teacher:</strong>
+          <strong>
+            Sort by Teacher:
+          </strong>
         </label>
 
         <br />
@@ -89,20 +131,24 @@ function TeacherDashboard({ setTeacherLoggedIn })
             padding: "10px",
             width: "100%",
             fontSize: "1rem",
+            boxSizing: "border-box",
           }}
         >
 
           <option value="All">
-            All Teachers
+            ALL TEACHERS
           </option>
 
+
           {teachers.map((teacher) => (
+
             <option
               key={teacher}
               value={teacher}
             >
-              {teacher}
+              {teacher.toUpperCase()}
             </option>
+
           ))}
 
         </select>
@@ -110,14 +156,19 @@ function TeacherDashboard({ setTeacherLoggedIn })
       </div>
 
 
+
       {/* Scoreboard */}
+
       <div
         style={{
-          background: "white",
+          backgroundColor: "white",
           padding: "30px",
-          maxWidth: "800px",
+          maxWidth: "900px",
           margin: "0 auto",
           borderRadius: "12px",
+          boxShadow:
+            "0 2px 8px rgba(0,0,0,0.15)",
+          overflowX: "auto",
         }}
       >
 
@@ -129,84 +180,163 @@ function TeacherDashboard({ setTeacherLoggedIn })
         >
 
           <thead>
+
             <tr>
-              <th>#</th>
-              <th>Student</th>
-              <th>Teacher</th>
-              <th>Reading Minutes</th>
+
+              <th
+                style={{
+                  padding: "12px",
+                  textAlign: "left",
+                  borderBottom:
+                    "2px solid #ddd",
+                }}
+              >
+                #
+              </th>
+
+
+              <th
+                style={{
+                  padding: "12px",
+                  textAlign: "left",
+                  borderBottom:
+                    "2px solid #ddd",
+                }}
+              >
+                Student
+              </th>
+
+
+              <th
+                style={{
+                  padding: "12px",
+                  textAlign: "left",
+                  borderBottom:
+                    "2px solid #ddd",
+                }}
+              >
+                Teacher
+              </th>
+
+
+              <th
+                style={{
+                  padding: "12px",
+                  textAlign: "right",
+                  borderBottom:
+                    "2px solid #ddd",
+                }}
+              >
+                Reading Minutes
+              </th>
+
             </tr>
+
           </thead>
+
 
           <tbody>
 
-            {sortedStudents.map((student, index) => (
+            {sortedStudents.map(
+              (student, index) => (
 
-              <tr key={index}>
+                <tr key={index}>
 
-                <td
-                  style={{
-                    padding: "12px",
-                    borderTop: "1px solid #ddd",
-                  }}
-                >
-                  {index + 1}
-                </td>
+                  <td
+                    style={{
+                      padding: "12px",
+                      borderBottom:
+                        "1px solid #ddd",
+                    }}
+                  >
+                    {index + 1}
+                  </td>
 
-                <td
-                  style={{
-                    padding: "12px",
-                    borderTop: "1px solid #ddd",
-                  }}
-                >
-                  {student.firstName} {student.lastName}
-                </td>
 
-                <td
-                  style={{
-                    padding: "12px",
-                    borderTop: "1px solid #ddd",
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {student.teacher}
-                </td>
+                  <td
+                    style={{
+                      padding: "12px",
+                      borderBottom:
+                        "1px solid #ddd",
+                    }}
+                  >
+                    {student.firstName}{" "}
+                    {student.lastName}
+                  </td>
 
-                <td
-                  style={{
-                    padding: "12px",
-                    borderTop: "1px solid #ddd",
-                    textAlign: "right",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {student.readingMinutes}
-                </td>
 
-              </tr>
+                  <td
+                    style={{
+                      padding: "12px",
+                      borderBottom:
+                        "1px solid #ddd",
+                    }}
+                  >
+                    {student.teacher
+                      ? student.teacher.toUpperCase()
+                      : "UNKNOWN"}
+                  </td>
 
-            ))}
+
+                  <td
+                    style={{
+                      padding: "12px",
+                      borderBottom:
+                        "1px solid #ddd",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {student.readingMinutes || 0}
+                  </td>
+
+                </tr>
+
+              )
+            )}
 
           </tbody>
 
         </table>
 
 
+        {/* No students message */}
+
         {sortedStudents.length === 0 && (
-          <p style={{ textAlign: "center" }}>
+
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: "20px",
+            }}
+          >
             No students found.
           </p>
+
         )}
 
       </div>
 
 
+
+      {/* Logout */}
+
       <button
-        onClick={() => setTeacherLoggedIn(false)}
+        onClick={() =>
+        {
+          setTeacherLoggedIn(false);
+          setSelectedTeacher("All");
+        }}
         style={{
           display: "block",
           margin: "30px auto",
           padding: "10px 40px",
           cursor: "pointer",
+          border: "none",
+          borderRadius: "6px",
+          backgroundColor: "#333",
+          color: "white",
+          fontSize: "1rem",
         }}
       >
         Logout
