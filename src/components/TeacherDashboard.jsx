@@ -2,13 +2,18 @@ import React, { useState } from "react";
 
 function TeacherDashboard({ setTeacherLoggedIn })
 {
-  const [selectedTeacher, setSelectedTeacher] = useState("All");
+  const [selectedTeacher, setSelectedTeacher] =
+    useState("All");
 
-  const users =
-    JSON.parse(localStorage.getItem("users")) || [];
+  const [users, setUsers] = useState(
+    JSON.parse(localStorage.getItem("users")) || []
+  );
 
 
-
+  /*
+   * Create a unique list of teachers.
+   * Capitalization is ignored.
+   */
   const teacherMap = {};
 
   users.forEach((student) =>
@@ -32,7 +37,6 @@ function TeacherDashboard({ setTeacherLoggedIn })
   });
 
 
-
   const teachers =
     Object.values(teacherMap).sort(
       (a, b) =>
@@ -42,25 +46,76 @@ function TeacherDashboard({ setTeacherLoggedIn })
     );
 
 
-
+  /*
+   * Filter students by teacher.
+   */
   const filteredStudents =
     selectedTeacher === "All"
       ? users
       : users.filter(
           (student) =>
             student.teacher &&
-            student.teacher.trim().toLowerCase() ===
-              selectedTeacher.trim().toLowerCase()
+            student.teacher
+              .trim()
+              .toLowerCase() ===
+              selectedTeacher
+                .trim()
+                .toLowerCase()
         );
 
 
- 
+  /*
+   * Sort highest minutes first.
+   */
   const sortedStudents =
     [...filteredStudents].sort(
       (a, b) =>
         (b.readingMinutes || 0) -
         (a.readingMinutes || 0)
     );
+
+
+  /*
+   * Delete a student.
+   */
+  const deleteStudent = (studentToDelete) =>
+  {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${studentToDelete.firstName} ${studentToDelete.lastName}?`
+    );
+
+
+    if (!confirmDelete)
+    {
+      return;
+    }
+
+
+    const updatedUsers = users.filter(
+      (student) =>
+        !(
+          student.firstName ===
+            studentToDelete.firstName &&
+          student.lastName ===
+            studentToDelete.lastName &&
+          student.teacher
+            .trim()
+            .toLowerCase() ===
+            studentToDelete.teacher
+              .trim()
+              .toLowerCase()
+        )
+    );
+
+
+    localStorage.setItem(
+      "users",
+      JSON.stringify(updatedUsers)
+    );
+
+
+    setUsers(updatedUsers);
+  };
 
 
   return (
@@ -72,8 +127,6 @@ function TeacherDashboard({ setTeacherLoggedIn })
         boxSizing: "border-box",
       }}
     >
-
-      {/* Page Title */}
 
       <h1
         style={{
@@ -119,12 +172,16 @@ function TeacherDashboard({ setTeacherLoggedIn })
           </strong>
         </label>
 
+
         <br />
+
 
         <select
           value={selectedTeacher}
           onChange={(e) =>
-            setSelectedTeacher(e.target.value)
+            setSelectedTeacher(
+              e.target.value
+            )
           }
           style={{
             marginTop: "10px",
@@ -163,7 +220,7 @@ function TeacherDashboard({ setTeacherLoggedIn })
         style={{
           backgroundColor: "white",
           padding: "30px",
-          maxWidth: "900px",
+          maxWidth: "1000px",
           margin: "0 auto",
           borderRadius: "12px",
           boxShadow:
@@ -230,6 +287,18 @@ function TeacherDashboard({ setTeacherLoggedIn })
                 Reading Minutes
               </th>
 
+
+              <th
+                style={{
+                  padding: "12px",
+                  textAlign: "center",
+                  borderBottom:
+                    "2px solid #ddd",
+                }}
+              >
+                Actions
+              </th>
+
             </tr>
 
           </thead>
@@ -290,6 +359,36 @@ function TeacherDashboard({ setTeacherLoggedIn })
                     {student.readingMinutes || 0}
                   </td>
 
+
+                  <td
+                    style={{
+                      padding: "12px",
+                      borderBottom:
+                        "1px solid #ddd",
+                      textAlign: "center",
+                    }}
+                  >
+
+                    <button
+                      onClick={() =>
+                        deleteStudent(student)
+                      }
+                      style={{
+                        padding:
+                          "6px 12px",
+                        cursor: "pointer",
+                        backgroundColor:
+                          "#d9534f",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "5px",
+                      }}
+                    >
+                      Delete
+                    </button>
+
+                  </td>
+
                 </tr>
 
               )
@@ -299,8 +398,6 @@ function TeacherDashboard({ setTeacherLoggedIn })
 
         </table>
 
-
-        {/* No students message */}
 
         {sortedStudents.length === 0 && (
 
