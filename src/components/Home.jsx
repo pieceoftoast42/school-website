@@ -99,7 +99,13 @@ function Home({ currentUser, setCurrentUser })
       </h2>
 
       <h3 style={{ textAlign: "center" }}>
-        Teacher: {currentUser.teacher}
+    Teacher:{" "}
+    {currentUser.teacher
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+    )}
       </h3>
 
       <div
