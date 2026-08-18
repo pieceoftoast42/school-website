@@ -7,18 +7,37 @@ function Signup({ setCurrentUser, switchToLogin })
   const [teacher, setTeacher] = useState("");
   const [parentInitials, setParentInitials] = useState("");
 
+  // Makes teacher names look like:
+  // mrs. smith -> Mrs. Smith
+  // MRS. SMITH -> Mrs. Smith
+  const formatTeacherName = (name) =>
+  {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  };
+
+
   const signup = (e) =>
   {
     e.preventDefault();
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const users =
+      JSON.parse(localStorage.getItem("users")) || [];
+
+
+    const formattedTeacher =
+      formatTeacherName(teacher);
+
 
     const exists = users.find(
       (u) =>
         u.firstName.toLowerCase() === firstName.toLowerCase() &&
         u.lastName.toLowerCase() === lastName.toLowerCase() &&
-        u.teacher.toLowerCase() === teacher.toLowerCase()
+        u.teacher.toLowerCase() === formattedTeacher.toLowerCase()
     );
+
 
     if (exists)
     {
@@ -26,21 +45,34 @@ function Signup({ setCurrentUser, switchToLogin })
       return;
     }
 
+
     const newStudent =
     {
-      firstName,
-      lastName,
-      teacher,
-      parentInitials: parentInitials.toUpperCase(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+
+      // Save teacher name consistently
+      teacher: formattedTeacher,
+
+      parentInitials:
+        parentInitials.trim().toUpperCase(),
+
       readingMinutes: 0
     };
 
+
     users.push(newStudent);
 
-    localStorage.setItem("users", JSON.stringify(users));
+
+    localStorage.setItem(
+      "users",
+      JSON.stringify(users)
+    );
+
 
     setCurrentUser(newStudent);
   };
+
 
   const styles =
   {
@@ -52,15 +84,18 @@ function Signup({ setCurrentUser, switchToLogin })
       alignItems: "center",
       backgroundColor: "#f0f2f5",
     },
+
     card:
     {
       background: "#ffffff",
       padding: "30px 40px",
       borderRadius: "12px",
       width: "350px",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      boxShadow:
+        "0 4px 12px rgba(0,0,0,0.15)",
       textAlign: "center",
     },
+
     input:
     {
       width: "100%",
@@ -69,7 +104,9 @@ function Signup({ setCurrentUser, switchToLogin })
       borderRadius: "6px",
       border: "1px solid #ccc",
       fontSize: "1rem",
+      boxSizing: "border-box",
     },
+
     button:
     {
       width: "100%",
@@ -82,6 +119,7 @@ function Signup({ setCurrentUser, switchToLogin })
       cursor: "pointer",
       marginBottom: "10px",
     },
+
     switchBtn:
     {
       background: "transparent",
@@ -94,10 +132,14 @@ function Signup({ setCurrentUser, switchToLogin })
     },
   };
 
+
   return (
     <div style={styles.container}>
+
       <div style={styles.card}>
+
         <h2>Create Student</h2>
+
 
         <form onSubmit={signup}>
 
@@ -106,27 +148,36 @@ function Signup({ setCurrentUser, switchToLogin })
             placeholder="First Name"
             required
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={(e) =>
+              setFirstName(e.target.value)
+            }
             style={styles.input}
           />
+
 
           <input
             type="text"
             placeholder="Last Name"
             required
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={(e) =>
+              setLastName(e.target.value)
+            }
             style={styles.input}
           />
+
 
           <input
             type="text"
             placeholder="Teacher"
             required
             value={teacher}
-            onChange={(e) => setTeacher(e.target.value)}
+            onChange={(e) =>
+              setTeacher(e.target.value)
+            }
             style={styles.input}
           />
+
 
           <input
             type="text"
@@ -135,16 +186,23 @@ function Signup({ setCurrentUser, switchToLogin })
             maxLength="3"
             value={parentInitials}
             onChange={(e) =>
-              setParentInitials(e.target.value.toUpperCase())
+              setParentInitials(
+                e.target.value.toUpperCase()
+              )
             }
             style={styles.input}
           />
 
-          <button type="submit" style={styles.button}>
+
+          <button
+            type="submit"
+            style={styles.button}
+          >
             Sign Up
           </button>
 
         </form>
+
 
         <button
           style={styles.switchBtn}
@@ -154,6 +212,7 @@ function Signup({ setCurrentUser, switchToLogin })
         </button>
 
       </div>
+
     </div>
   );
 }
