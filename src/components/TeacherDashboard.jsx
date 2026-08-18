@@ -6,20 +6,42 @@ function TeacherDashboard({ setTeacherLoggedIn })
 
   const users = JSON.parse(localStorage.getItem("users")) || [];
 
-  const teachers = [
-    ...new Set(users.map((student) => student.teacher))
-  ].sort();
+  // Create a list of teachers without duplicates,
+  // ignoring capitalization
+  const teacherMap = {};
 
+  users.forEach((student) =>
+  {
+    const teacherName = student.teacher.trim();
+    const teacherKey = teacherName.toLowerCase();
+
+    if (!teacherMap[teacherKey])
+    {
+      teacherMap[teacherKey] = teacherName;
+    }
+  });
+
+  const teachers = Object.values(teacherMap).sort(
+    (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+  );
+
+
+  // Filter students by teacher, ignoring capitalization
   const filteredStudents =
     selectedTeacher === "All"
       ? users
       : users.filter(
-          (student) => student.teacher === selectedTeacher
+          (student) =>
+            student.teacher.trim().toLowerCase() ===
+            selectedTeacher.trim().toLowerCase()
         );
 
+
+  // Sort highest reading minutes first
   const sortedStudents = [...filteredStudents].sort(
     (a, b) => b.readingMinutes - a.readingMinutes
   );
+
 
   return (
     <div
@@ -29,6 +51,7 @@ function TeacherDashboard({ setTeacherLoggedIn })
         padding: "40px",
       }}
     >
+
       <h1 style={{ textAlign: "center" }}>
         Teacher Dashboard
       </h1>
@@ -37,6 +60,8 @@ function TeacherDashboard({ setTeacherLoggedIn })
         Reading Scoreboard
       </h2>
 
+
+      {/* Teacher Filter */}
       <div
         style={{
           background: "white",
@@ -47,13 +72,18 @@ function TeacherDashboard({ setTeacherLoggedIn })
           textAlign: "center",
         }}
       >
+
         <label>
           <strong>Sort by Teacher:</strong>
         </label>
 
+        <br />
+
         <select
           value={selectedTeacher}
-          onChange={(e) => setSelectedTeacher(e.target.value)}
+          onChange={(e) =>
+            setSelectedTeacher(e.target.value)
+          }
           style={{
             marginTop: "10px",
             padding: "10px",
@@ -61,18 +91,26 @@ function TeacherDashboard({ setTeacherLoggedIn })
             fontSize: "1rem",
           }}
         >
+
           <option value="All">
             All Teachers
           </option>
 
           {teachers.map((teacher) => (
-            <option key={teacher} value={teacher}>
+            <option
+              key={teacher}
+              value={teacher}
+            >
               {teacher}
             </option>
           ))}
+
         </select>
+
       </div>
 
+
+      {/* Scoreboard */}
       <div
         style={{
           background: "white",
@@ -82,12 +120,14 @@ function TeacherDashboard({ setTeacherLoggedIn })
           borderRadius: "12px",
         }}
       >
+
         <table
           style={{
             width: "100%",
             borderCollapse: "collapse",
           }}
         >
+
           <thead>
             <tr>
               <th>#</th>
@@ -98,8 +138,11 @@ function TeacherDashboard({ setTeacherLoggedIn })
           </thead>
 
           <tbody>
+
             {sortedStudents.map((student, index) => (
+
               <tr key={index}>
+
                 <td
                   style={{
                     padding: "12px",
@@ -122,6 +165,7 @@ function TeacherDashboard({ setTeacherLoggedIn })
                   style={{
                     padding: "12px",
                     borderTop: "1px solid #ddd",
+                    textTransform: "capitalize",
                   }}
                 >
                   {student.teacher}
@@ -132,21 +176,29 @@ function TeacherDashboard({ setTeacherLoggedIn })
                     padding: "12px",
                     borderTop: "1px solid #ddd",
                     textAlign: "right",
+                    fontWeight: "bold",
                   }}
                 >
                   {student.readingMinutes}
                 </td>
+
               </tr>
+
             ))}
+
           </tbody>
+
         </table>
+
 
         {sortedStudents.length === 0 && (
           <p style={{ textAlign: "center" }}>
             No students found.
           </p>
         )}
+
       </div>
+
 
       <button
         onClick={() => setTeacherLoggedIn(false)}
@@ -154,10 +206,12 @@ function TeacherDashboard({ setTeacherLoggedIn })
           display: "block",
           margin: "30px auto",
           padding: "10px 40px",
+          cursor: "pointer",
         }}
       >
         Logout
       </button>
+
     </div>
   );
 }
