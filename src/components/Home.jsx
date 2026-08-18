@@ -8,28 +8,38 @@ function Home({ currentUser, setCurrentUser })
 
   const loadLeaderboard = () =>
   {
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const users =
+      JSON.parse(localStorage.getItem("users")) || [];
 
-    users.sort((a, b) => b.readingMinutes - a.readingMinutes);
+    const sortedUsers = [...users].sort(
+      (a, b) =>
+        (b.readingMinutes || 0) -
+        (a.readingMinutes || 0)
+    );
 
-    setLeaderboard(users);
+    setLeaderboard(sortedUsers);
   };
+
 
   useEffect(() =>
   {
     loadLeaderboard();
   }, []);
 
-  const addMinutes = () =>
+
+  const changeMinutes = () =>
   {
     const amount = parseInt(minutes);
 
-    if (isNaN(amount) || amount <= 0)
+    if (isNaN(amount) || amount === 0)
     {
       alert("Please enter a valid number of minutes.");
       return;
     }
 
+
+    // Parent initials are required for both
+    // adding and subtracting minutes.
     if (
       parentInitials.toUpperCase() !==
       currentUser.parentInitials.toUpperCase()
@@ -39,46 +49,78 @@ function Home({ currentUser, setCurrentUser })
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+
+    const users =
+      JSON.parse(localStorage.getItem("users")) || [];
+
+
+    const currentMinutes =
+      currentUser.readingMinutes || 0;
+
+
+    const newTotal =
+      currentMinutes + amount;
+
+
+    // Prevent the total from going below zero.
+    if (newTotal < 0)
+    {
+      alert(
+        "You cannot subtract more minutes than the student currently has."
+      );
+      return;
+    }
+
 
     const updatedUsers = users.map((user) =>
     {
       if (
         user.firstName === currentUser.firstName &&
         user.lastName === currentUser.lastName &&
-        user.teacher === currentUser.teacher
+        user.teacher.toLowerCase() ===
+          currentUser.teacher.toLowerCase()
       )
       {
         return {
           ...user,
-          readingMinutes: user.readingMinutes + amount,
+          readingMinutes: newTotal,
         };
       }
 
       return user;
     });
 
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
+
+    localStorage.setItem(
+      "users",
+      JSON.stringify(updatedUsers)
+    );
+
 
     const updatedCurrentUser =
     {
       ...currentUser,
-      readingMinutes: currentUser.readingMinutes + amount,
+      readingMinutes: newTotal,
     };
 
+
     setCurrentUser(updatedCurrentUser);
+
 
     setMinutes("");
     setParentInitials("");
 
+
     loadLeaderboard();
   };
+
 
   const logout = () =>
   {
     localStorage.removeItem("currentUser");
     setCurrentUser(null);
   };
+
 
   return (
     <div
@@ -88,19 +130,24 @@ function Home({ currentUser, setCurrentUser })
         padding: "40px",
       }}
     >
+
       <h1 style={{ textAlign: "center" }}>
         Rooted in Learning:
         <br />
         Growing Minds, Growing Futures
       </h1>
 
+
       <h2 style={{ textAlign: "center" }}>
-        Welcome {currentUser.firstName} {currentUser.lastName}
+        Welcome {currentUser.firstName}{" "}
+        {currentUser.lastName}
       </h2>
+
 
       <h3 style={{ textAlign: "center" }}>
         Teacher: {currentUser.teacher.toUpperCase()}
       </h3>
+
 
       <div
         style={{
@@ -109,37 +156,60 @@ function Home({ currentUser, setCurrentUser })
           alignItems: "flex-start",
           gap: "50px",
           marginTop: "40px",
+          flexWrap: "wrap",
         }}
       >
+
         {/* Reading Minutes Card */}
+
         <div
           style={{
             background: "white",
             padding: "30px",
             width: "300px",
             borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            boxShadow:
+              "0 2px 8px rgba(0,0,0,0.15)",
           }}
         >
+
           <h2 style={{ textAlign: "center" }}>
             Your Reading Minutes
           </h2>
+
 
           <h1 style={{ textAlign: "center" }}>
             {currentUser.readingMinutes}
           </h1>
 
+
           <input
             type="number"
             placeholder="Minutes Read"
             value={minutes}
-            onChange={(e) => setMinutes(e.target.value)}
+            onChange={(e) =>
+              setMinutes(e.target.value)
+            }
             style={{
               width: "100%",
               padding: "10px",
-              marginBottom: "15px",
+              marginBottom: "10px",
+              boxSizing: "border-box",
             }}
           />
+
+
+          <p
+            style={{
+              fontSize: "0.85rem",
+              color: "#666",
+              marginTop: "0",
+            }}
+          >
+            Enter a positive number to add minutes
+            or a negative number to subtract minutes.
+          </p>
+
 
           <input
             type="text"
@@ -147,40 +217,52 @@ function Home({ currentUser, setCurrentUser })
             maxLength="3"
             value={parentInitials}
             onChange={(e) =>
-              setParentInitials(e.target.value.toUpperCase())
+              setParentInitials(
+                e.target.value.toUpperCase()
+              )
             }
             style={{
               width: "100%",
               padding: "10px",
               marginBottom: "15px",
+              boxSizing: "border-box",
             }}
           />
 
+
           <button
-            onClick={addMinutes}
+            onClick={changeMinutes}
             style={{
               width: "100%",
               padding: "10px",
               cursor: "pointer",
             }}
           >
-            Add Minutes
+            Update Minutes
           </button>
+
         </div>
 
+
+
         {/* Leaderboard */}
+
         <div
           style={{
             background: "white",
             padding: "30px",
             width: "400px",
             borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            boxShadow:
+              "0 2px 8px rgba(0,0,0,0.15)",
+            overflowX: "auto",
           }}
         >
+
           <h2 style={{ textAlign: "center" }}>
             Reading Leaderboard
           </h2>
+
 
           <table
             style={{
@@ -188,33 +270,76 @@ function Home({ currentUser, setCurrentUser })
               borderCollapse: "collapse",
             }}
           >
+
             <thead>
+
               <tr>
-                <th align="left">#</th>
-                <th align="left">Student</th>
-                <th align="left">Teacher</th>
-                <th align="right">Minutes</th>
+
+                <th align="left">
+                  #
+                </th>
+
+                <th align="left">
+                  Student
+                </th>
+
+                <th align="left">
+                  Teacher
+                </th>
+
+                <th align="right">
+                  Minutes
+                </th>
+
               </tr>
+
             </thead>
 
+
             <tbody>
-              {leaderboard.map((student, index) => (
-                <tr key={index}>
-                  <td>{index + 1}</td>
 
-                  <td>{student.firstName}</td>
+              {leaderboard.map(
+                (student, index) => (
 
-                  <td>{student.teacher}</td>
+                  <tr key={index}>
 
-                  <td align="right">
-                    {student.readingMinutes}
-                  </td>
-                </tr>
-              ))}
+                    <td>
+                      {index + 1}
+                    </td>
+
+
+                    <td>
+                      {student.firstName}
+                    </td>
+
+
+                    <td>
+                      {student.teacher
+                        ? student.teacher.toUpperCase()
+                        : ""}
+                    </td>
+
+
+                    <td align="right">
+                      {student.readingMinutes || 0}
+                    </td>
+
+                  </tr>
+
+                )
+              )}
+
             </tbody>
+
           </table>
+
         </div>
+
       </div>
+
+
+
+      {/* Logout */}
 
       <button
         onClick={logout}
@@ -227,6 +352,7 @@ function Home({ currentUser, setCurrentUser })
       >
         Logout
       </button>
+
     </div>
   );
 }
