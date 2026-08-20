@@ -1,0 +1,16 @@
+button {
+  background-color: maroon;
+  color: yellow;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #800000;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
