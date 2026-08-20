@@ -32,20 +32,7 @@ function Login({
 
     try
     {
-      /*
-       * Look for the student in the Supabase
-       * students table.
-       *
-       * ilike makes the search ignore capitalization.
-       *
-       * For example:
-       *
-       * john
-       * JOHN
-       * John
-       *
-       * will all match.
-       */
+
       const { data, error } =
         await supabase
           .from("students")
@@ -66,10 +53,7 @@ function Login({
           .single();
 
 
-      /*
-       * If Supabase couldn't find the student,
-       * show an error.
-       */
+
       if (error || !data)
       {
         console.error(error);
@@ -83,11 +67,7 @@ function Login({
       }
 
 
-      /*
-       * Convert the Supabase database format
-       * into the format the rest of your React
-       * application currently uses.
-       */
+
       const loggedInUser =
       {
         id: data.id,
@@ -109,9 +89,6 @@ function Login({
       };
 
 
-      /*
-       * Send the student information back to App.jsx.
-       */
       setCurrentUser(loggedInUser);
     }
     catch (error)
