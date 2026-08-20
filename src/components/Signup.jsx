@@ -1,50 +1,115 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 
-function Login({
+function Signup({
   setCurrentUser,
-  switchToSignup,
-  switchToTeacherLogin
+  switchToLogin
 })
 {
   const [userN, setUserN] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [teacher, setTeacher] = useState("");
   const [parentInitials, setParentInitials] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const login = async (e) =>
+  const signup = async (e) =>
   {
     e.preventDefault();
 
     setLoading(true);
 
     const username = userN.trim();
+    const first = firstName.trim();
+    const last = lastName.trim();
+    const teacherName = teacher.trim().toUpperCase();
     const initials = parentInitials.trim().toUpperCase();
 
-    const { data, error } = await supabase
+    /*
+     * Check whether the username already exists.
+     */
+    const {
+      data: existingUser,
+      error: checkError
+    } = await supabase
       .from("students")
-      .select("*")
+      .select("id")
       .eq("user_n", username)
-      .eq("parent_initials", initials)
       .maybeSingle();
+
+    if (checkError)
+    {
+      console.error(
+        "Username check error:",
+        checkError
+      );
+
+      alert(
+        "There was a problem checking the username."
+      );
+
+      setLoading(false);
+
+      return;
+    }
+
+    if (existingUser)
+    {
+      alert(
+        "That username is already taken."
+      );
+
+      setLoading(false);
+
+      return;
+    }
+
+    /*
+     * Create the student in Supabase.
+     */
+    const {
+      data,
+      error
+    } = await supabase
+      .from("students")
+      .insert([
+        {
+          user_n: username,
+
+          first_name: first,
+
+          last_name: last,
+
+          teacher: teacherName,
+
+          parent_initials: initials,
+
+          reading_minutes: 0,
+        }
+      ])
+      .select()
+      .single();
 
     if (error)
     {
-      console.error("Login error:", error);
+      console.error(
+        "Signup error:",
+        error
+      );
 
-      alert("There was a problem logging in.");
+      alert(
+        "There was a problem creating the account."
+      );
+
       setLoading(false);
 
       return;
     }
 
-    if (!data)
-    {
-      alert("Incorrect username or parent initials.");
-      setLoading(false);
-
-      return;
-    }
-
+    /*
+     * Convert the Supabase row into the
+     * format the rest of your React app uses.
+     */
     const user =
     {
       id: data.id,
@@ -81,20 +146,49 @@ function Login({
         style={{
           backgroundColor: "white",
           padding: "30px",
-          width: "350px",
+          width: "400px",
           borderRadius: "12px",
           boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
         }}
       >
+
         <h1 style={{ textAlign: "center" }}>
-          Rooted in Learning
+          Student Signup
         </h1>
 
-        <h2 style={{ textAlign: "center" }}>
-          Student Login
-        </h2>
+        <form onSubmit={signup}>
 
-        <form onSubmit={login}>
+          <input
+            type="text"
+            placeholder="First Name"
+            value={firstName}
+            onChange={(e) =>
+              setFirstName(e.target.value)
+            }
+            required
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
+              boxSizing: "border-box",
+            }}
+          />
+
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={(e) =>
+              setLastName(e.target.value)
+            }
+            required
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
+              boxSizing: "border-box",
+            }}
+          />
 
           <input
             type="text"
@@ -107,7 +201,23 @@ function Login({
             style={{
               width: "100%",
               padding: "10px",
-              marginBottom: "15px",
+              marginBottom: "10px",
+              boxSizing: "border-box",
+            }}
+          />
+
+          <input
+            type="text"
+            placeholder="Teacher Name"
+            value={teacher}
+            onChange={(e) =>
+              setTeacher(e.target.value)
+            }
+            required
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
               boxSizing: "border-box",
             }}
           />
@@ -140,13 +250,15 @@ function Login({
               cursor: "pointer",
             }}
           >
-            {loading ? "Logging In..." : "Login"}
+            {loading
+              ? "Creating Account..."
+              : "Sign Up"}
           </button>
 
         </form>
 
         <button
-          onClick={switchToSignup}
+          onClick={switchToLogin}
           style={{
             width: "100%",
             padding: "10px",
@@ -154,19 +266,7 @@ function Login({
             cursor: "pointer",
           }}
         >
-          Create Student Account
-        </button>
-
-        <button
-          onClick={switchToTeacherLogin}
-          style={{
-            width: "100%",
-            padding: "10px",
-            marginTop: "10px",
-            cursor: "pointer",
-          }}
-        >
-          Teacher Sign In
+          Back to Login
         </button>
 
       </div>
@@ -174,4 +274,4 @@ function Login({
   );
 }
 
-export default Login;
+export default Signup;
