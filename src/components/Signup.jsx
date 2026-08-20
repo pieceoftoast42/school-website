@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { supabase } from "../supabaseClient";
 
 function Signup({ setCurrentUser, switchToLogin })
 {
@@ -6,71 +7,127 @@ function Signup({ setCurrentUser, switchToLogin })
   const [lastName, setLastName] = useState("");
   const [teacher, setTeacher] = useState("");
   const [parentInitials, setParentInitials] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Makes teacher names look like:
-  // mrs. smith -> Mrs. Smith
-  // MRS. SMITH -> Mrs. Smith
+
   const formatTeacherName = (name) =>
   {
-    return name
-      .trim()
-      .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    return name.trim().toUpperCase();
   };
 
 
-  const signup = (e) =>
+  const signup = async (e) =>
   {
     e.preventDefault();
 
-    const users =
-      JSON.parse(localStorage.getItem("users")) || [];
+    setLoading(true);
 
+
+    const formattedFirstName =
+      firstName.trim();
+
+    const formattedLastName =
+      lastName.trim();
 
     const formattedTeacher =
       formatTeacherName(teacher);
 
-
-    const exists = users.find(
-      (u) =>
-        u.firstName.toLowerCase() === firstName.toLowerCase() &&
-        u.lastName.toLowerCase() === lastName.toLowerCase() &&
-        u.teacher.toLowerCase() === formattedTeacher.toLowerCase()
-    );
+    const formattedInitials =
+      parentInitials.trim().toUpperCase();
 
 
-    if (exists)
+    try
     {
-      alert("Student already exists");
-      return;
+      const { data: existingStudents, error: checkError } =
+        await supabase
+          .from("students")
+          .select("*")
+          .ilike("first_name", formattedFirstName)
+          .ilike("last_name", formattedLastName)
+          .ilike("teacher", formattedTeacher);
+
+
+      if (checkError)
+      {
+        console.error(checkError);
+        alert(
+          "There was a problem checking for the student."
+        );
+        setLoading(false);
+        return;
+      }
+
+
+      if (
+        existingStudents &&
+        existingStudents.length > 0
+      )
+      {
+        alert("Student already exists.");
+        setLoading(false);
+        return;
+      }
+
+
+      const { data, error } =
+        await supabase
+          .from("students")
+          .insert([
+            {
+              first_name: formattedFirstName,
+              last_name: formattedLastName,
+              teacher: formattedTeacher,
+              parent_initials: formattedInitials,
+              reading_minutes: 0,
+            },
+          ])
+          .select()
+          .single();
+
+
+      if (error)
+      {
+        console.error(error);
+
+        alert(
+          "There was a problem creating the student account."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+
+      const newCurrentUser =
+      {
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        teacher: data.teacher,
+        parentInitials: data.parent_initials,
+        readingMinutes: data.reading_minutes,
+      };
+
+
+      setCurrentUser(newCurrentUser);
+
+
+      setFirstName("");
+      setLastName("");
+      setTeacher("");
+      setParentInitials("");
+    }
+    catch (error)
+    {
+      console.error(error);
+
+      alert(
+        "Something went wrong while creating the account."
+      );
     }
 
 
-    const newStudent =
-    {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-
-      // Save teacher name consistently
-      teacher: formattedTeacher,
-
-      parentInitials:
-        parentInitials.trim().toUpperCase(),
-
-      readingMinutes: 0
-    };
-
-
-    users.push(newStudent);
-
-
-    localStorage.setItem(
-      "users",
-      JSON.stringify(users)
-    );
-
-
-    setCurrentUser(newStudent);
+    setLoading(false);
   };
 
 
@@ -94,6 +151,13 @@ function Signup({ setCurrentUser, switchToLogin })
       boxShadow:
         "0 4px 12px rgba(0,0,0,0.15)",
       textAlign: "center",
+    },
+
+    heading:
+    {
+      marginBottom: "20px",
+      fontSize: "1.6rem",
+      color: "#333",
     },
 
     input:
@@ -138,7 +202,9 @@ function Signup({ setCurrentUser, switchToLogin })
 
       <div style={styles.card}>
 
-        <h2>Create Student</h2>
+        <h2 style={styles.heading}>
+          Create Student
+        </h2>
 
 
         <form onSubmit={signup}>
@@ -169,7 +235,7 @@ function Signup({ setCurrentUser, switchToLogin })
 
           <input
             type="text"
-            placeholder="Teacher"
+            placeholder="Teacher Name"
             required
             value={teacher}
             onChange={(e) =>
@@ -197,8 +263,11 @@ function Signup({ setCurrentUser, switchToLogin })
           <button
             type="submit"
             style={styles.button}
+            disabled={loading}
           >
-            Sign Up
+            {loading
+              ? "Creating Account..."
+              : "Sign Up"}
           </button>
 
         </form>
@@ -207,8 +276,9 @@ function Signup({ setCurrentUser, switchToLogin })
         <button
           style={styles.switchBtn}
           onClick={switchToLogin}
+          disabled={loading}
         >
-          Already Registered? Login
+          Already have an account? Login
         </button>
 
       </div>
