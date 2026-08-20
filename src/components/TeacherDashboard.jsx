@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import "./Teach.css" ;
 
 function TeacherDashboard({ setCurrentUser })
 {
