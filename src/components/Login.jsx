@@ -7,272 +7,114 @@ function Login({
   switchToTeacherLogin
 })
 {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [password, setPassword] = useState("");
+  const [userN, setUserN] = useState("");
   const [parentInitials, setParentInitials] = useState("");
   const [loading, setLoading] = useState(false);
 
-/* real*/
   const login = async (e) =>
   {
     e.preventDefault();
 
     setLoading(true);
 
+    const username = userN.trim();
+    const initials = parentInitials.trim().toUpperCase();
 
-    const cleanFirstName =
-      firstName.trim();
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("user_n", username)
+      .eq("parent_initials", initials)
+      .maybeSingle();
 
-    const cleanLastName =
-      lastName.trim();
-
-    const cleanInitials =
-      parentInitials.trim().toUpperCase();
-
-
-
-    const internalEmail =
-      `${cleanFirstName.toLowerCase()}.${cleanLastName.toLowerCase()}@students.rootedinlearning.local`;
-
-
-    try
+    if (error)
     {
+      console.error("Login error:", error);
 
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email: internalEmail,
-          password: password,
-        });
+      alert("There was a problem logging in.");
+      setLoading(false);
 
-
-      if (authError)
-      {
-        console.error(authError);
-
-        alert(
-          "Invalid name or password."
-        );
-
-        setLoading(false);
-
-        return;
-      }
-
-
-
-      const { data: studentData, error: studentError } =
-        await supabase
-          .from("students")
-          .select("*")
-          .eq(
-            "auth_user_id",
-            authData.user.id
-          )
-          .single();
-
-
-      if (studentError || !studentData)
-      {
-        console.error(studentError);
-
-        alert(
-          "Student profile could not be found."
-        );
-
-        await supabase.auth.signOut();
-
-        setLoading(false);
-
-        return;
-      }
-
-
-
-      if (
-        cleanInitials !==
-        studentData.parent_initials
-          .trim()
-          .toUpperCase()
-      )
-      {
-        alert(
-          "Incorrect parent initials."
-        );
-
-        await supabase.auth.signOut();
-
-        setLoading(false);
-
-        return;
-      }
-
-
-
-      const loggedInUser =
-      {
-        id: studentData.id,
-
-        authUserId:
-          authData.user.id,
-
-        firstName:
-          studentData.first_name,
-
-        lastName:
-          studentData.last_name,
-
-        teacher:
-          studentData.teacher,
-
-        parentInitials:
-          studentData.parent_initials,
-
-        readingMinutes:
-          studentData.reading_minutes,
-      };
-
-
-      setCurrentUser(
-        loggedInUser
-      );
-    }
-    catch (error)
-    {
-      console.error(error);
-
-      alert(
-        "Something went wrong while logging in."
-      );
+      return;
     }
 
+    if (!data)
+    {
+      alert("Incorrect username or parent initials.");
+      setLoading(false);
+
+      return;
+    }
+
+    const user =
+    {
+      id: data.id,
+
+      userN: data.user_n,
+
+      firstName: data.first_name,
+
+      lastName: data.last_name,
+
+      teacher: data.teacher,
+
+      parentInitials: data.parent_initials,
+
+      readingMinutes: data.reading_minutes,
+    };
+
+    setCurrentUser(user);
 
     setLoading(false);
   };
 
-
-  const styles =
-  {
-    authContainer:
-    {
-      height: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#f0f2f5",
-    },
-
-    authCard:
-    {
-      background: "#ffffff",
-      padding: "30px 40px",
-      borderRadius: "12px",
-      width: "350px",
-      boxShadow:
-        "0 4px 12px rgba(0,0,0,0.15)",
-      textAlign: "center",
-    },
-
-    input:
-    {
-      width: "100%",
-      padding: "10px",
-      marginBottom: "15px",
-      borderRadius: "6px",
-      border: "1px solid #ccc",
-      fontSize: "1rem",
-      boxSizing: "border-box",
-    },
-
-    button:
-    {
-      width: "100%",
-      padding: "10px",
-      fontSize: "1rem",
-      borderRadius: "6px",
-      border: "none",
-      backgroundColor: "#333",
-      color: "white",
-      cursor: "pointer",
-      marginBottom: "10px",
-    },
-
-    switchBtn:
-    {
-      background: "transparent",
-      border: "none",
-      color: "#1e1e1e",
-      cursor: "pointer",
-      textDecoration: "underline",
-      marginTop: "10px",
-      fontSize: "0.9rem",
-    },
-
-    teacherBtn:
-    {
-      background: "transparent",
-      border: "none",
-      color: "#555",
-      cursor: "pointer",
-      textDecoration: "underline",
-      marginTop: "15px",
-      fontSize: "0.9rem",
-    },
-  };
-
-
   return (
-    <div style={styles.authContainer}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#f5f5f5",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: "30px",
+          width: "350px",
+          borderRadius: "12px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+        }}
+      >
+        <h1 style={{ textAlign: "center" }}>
+          Rooted in Learning
+        </h1>
 
-      <div style={styles.authCard}>
-
-        <h2>
+        <h2 style={{ textAlign: "center" }}>
           Student Login
         </h2>
-
 
         <form onSubmit={login}>
 
           <input
             type="text"
-            placeholder="First Name"
-            required
-            value={firstName}
+            placeholder="Username"
+            value={userN}
             onChange={(e) =>
-              setFirstName(e.target.value)
+              setUserN(e.target.value)
             }
-            style={styles.input}
-          />
-
-
-          <input
-            type="text"
-            placeholder="Last Name"
             required
-            value={lastName}
-            onChange={(e) =>
-              setLastName(e.target.value)
-            }
-            style={styles.input}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "15px",
+              boxSizing: "border-box",
+            }}
           />
-
-
-          <input
-            type="password"
-            placeholder="Password"
-            required
-            value={password}
-            onChange={(e) =>
-              setPassword(e.target.value)
-            }
-            style={styles.input}
-          />
-
 
           <input
             type="text"
             placeholder="Parent Initials"
-            required
             maxLength="3"
             value={parentInitials}
             onChange={(e) =>
@@ -280,45 +122,54 @@ function Login({
                 e.target.value.toUpperCase()
               )
             }
-            style={styles.input}
+            required
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "15px",
+              boxSizing: "border-box",
+            }}
           />
-
 
           <button
             type="submit"
-            style={styles.button}
             disabled={loading}
+            style={{
+              width: "100%",
+              padding: "10px",
+              cursor: "pointer",
+            }}
           >
-            {loading
-              ? "Logging In..."
-              : "Login"}
+            {loading ? "Logging In..." : "Login"}
           </button>
 
         </form>
 
-
         <button
-          style={styles.switchBtn}
           onClick={switchToSignup}
-          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginTop: "10px",
+            cursor: "pointer",
+          }}
         >
-          Don't have an account? Sign up
+          Create Student Account
         </button>
 
-
-        <br />
-
-
         <button
-          style={styles.teacherBtn}
           onClick={switchToTeacherLogin}
-          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginTop: "10px",
+            cursor: "pointer",
+          }}
         >
           Teacher Sign In
         </button>
 
       </div>
-
     </div>
   );
 }
