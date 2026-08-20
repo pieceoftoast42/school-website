@@ -1,113 +1,277 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
 import TeacherLogin from "./components/TeacherLogin";
 import TeacherDashboard from "./components/TeacherDashboard";
 
+import { supabase } from "./supabaseClient";
+
+
 function App()
 {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [showLogin, setShowLogin] = useState(true);
+  const [currentUser, setCurrentUser] =
+    useState(null);
 
-  const [showTeacherLogin, setShowTeacherLogin] = useState(false);
-  const [teacherLoggedIn, setTeacherLoggedIn] = useState(false);
+  const [page, setPage] =
+    useState("login");
+
+  const [loading, setLoading] =
+    useState(true);
+
+
+
+  const loadStudent = async (authUser) =>
+  {
+    if (!authUser)
+    {
+      setCurrentUser(null);
+      setLoading(false);
+      return;
+    }
+
+
+    const { data, error } =
+      await supabase
+        .from("students")
+        .select("*")
+        .eq(
+          "auth_user_id",
+          authUser.id
+        )
+        .single();
+
+
+    if (error || !data)
+    {
+      console.error(error);
+
+      setCurrentUser(null);
+      setLoading(false);
+
+      return;
+    }
+
+
+    setCurrentUser({
+      id: data.id,
+
+      authUserId:
+        authUser.id,
+
+      firstName:
+        data.first_name,
+
+      lastName:
+        data.last_name,
+
+      teacher:
+        data.teacher,
+
+      parentInitials:
+        data.parent_initials,
+
+      readingMinutes:
+        data.reading_minutes,
+    });
+
+
+    setPage("home");
+    setLoading(false);
+  };
+
+
 
   useEffect(() =>
   {
-    const savedUser =
-      JSON.parse(localStorage.getItem("currentUser"));
-
-    if (savedUser)
+    const checkSession = async () =>
     {
-      setCurrentUser(savedUser);
-    }
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
 
-    if (!localStorage.getItem("users"))
+
+      if (session)
+      {
+        await loadStudent(
+          session.user
+        );
+      }
+      else
+      {
+        setLoading(false);
+      }
+    };
+
+
+    checkSession();
+
+
+
+    const {
+      data: authListener
+    } = supabase.auth.onAuthStateChange(
+      async (_event, session) =>
+      {
+        if (session)
+        {
+          await loadStudent(
+            session.user
+          );
+        }
+        else
+        {
+          setCurrentUser(null);
+        }
+      }
+    );
+
+
+    return () =>
     {
-      localStorage.setItem("users", JSON.stringify([]));
-    }
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  useEffect(() =>
+
+
+  const switchToSignup = () =>
   {
-    if (currentUser)
-    {
-      localStorage.setItem(
-        "currentUser",
-        JSON.stringify(currentUser)
-      );
-    }
-    else
-    {
-      localStorage.removeItem("currentUser");
-    }
-  }, [currentUser]);
+    setPage("signup");
+  };
 
 
-  // Teacher Dashboard
-  if (teacherLoggedIn)
+
+  const switchToLogin = () =>
+  {
+    setPage("login");
+  };
+
+
+
+  const switchToTeacherLogin = () =>
+  {
+    setPage("teacherLogin");
+  };
+
+
+
+  const switchToStudentLogin = () =>
+  {
+    setPage("login");
+  };
+
+
+
+  if (loading)
+  {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <h2>
+          Loading...
+        </h2>
+      </div>
+    );
+  }
+
+
+
+  if (
+    currentUser &&
+    page === "home"
+  )
+  {
+    return (
+      <Home
+        currentUser={currentUser}
+        setCurrentUser={setCurrentUser}
+      />
+    );
+  }
+
+
+
+  if (
+    page === "teacherDashboard"
+  )
   {
     return (
       <TeacherDashboard
-        setTeacherLoggedIn={setTeacherLoggedIn}
+        setCurrentUser={setCurrentUser}
       />
     );
   }
 
 
-  // Teacher Password Login
-  if (showTeacherLogin)
+
+  if (
+    page === "teacherLogin"
+  )
   {
     return (
       <TeacherLogin
-        setTeacherLoggedIn={setTeacherLoggedIn}
-        switchToStudentLogin={() =>
-        {
-          setShowTeacherLogin(false);
-          setShowLogin(true);
-        }}
+        switchToStudentLogin={
+          switchToStudentLogin
+        }
+
+        switchToTeacherDashboard={() =>
+          setPage("teacherDashboard")
+        }
       />
     );
   }
 
 
-  // Student Login / Signup
-  if (!currentUser)
+
+  if (page === "signup")
   {
-    if (!showLogin)
-    {
-      return (
-        <Signup
-          setCurrentUser={setCurrentUser}
-          switchToLogin={() =>
-            setShowLogin(true)
-          }
-        />
-      );
-    }
-
     return (
-      <Login
-        setCurrentUser={setCurrentUser}
-        switchToSignup={() =>
-          setShowLogin(false)
+      <Signup
+        setCurrentUser={
+          (user) =>
+          {
+            setCurrentUser(user);
+            setPage("home");
+          }
         }
-        switchToTeacherLogin={() =>
-          setShowTeacherLogin(true)
+
+        switchToLogin={
+          switchToLogin
         }
       />
     );
   }
 
 
-  // Student Home
+
   return (
-    <Home
-      currentUser={currentUser}
-      setCurrentUser={setCurrentUser}
+    <Login
+      setCurrentUser={
+        (user) =>
+        {
+          setCurrentUser(user);
+          setPage("home");
+        }
+      }
+
+      switchToSignup={
+        switchToSignup
+      }
+
+      switchToTeacherLogin={
+        switchToTeacherLogin
+      }
     />
   );
 }
+
 
 export default App;
