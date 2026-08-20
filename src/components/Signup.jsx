@@ -6,7 +6,6 @@ function Signup({
   switchToLogin
 })
 {
-  const [userN, setUserN] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [teacher, setTeacher] = useState("");
@@ -19,53 +18,51 @@ function Signup({
 
     setLoading(true);
 
-    const username = userN.trim();
     const first = firstName.trim();
     const last = lastName.trim();
     const teacherName = teacher.trim().toUpperCase();
     const initials = parentInitials.trim().toUpperCase();
 
     /*
-     * Check whether the username already exists.
+     * Check whether this student already exists.
      */
     const {
-      data: existingUser,
+      data: existingStudent,
       error: checkError
     } = await supabase
       .from("students")
       .select("id")
-      .eq("user_n", username)
+      .eq("first_name", first)
+      .eq("last_name", last)
       .maybeSingle();
 
     if (checkError)
     {
       console.error(
-        "Username check error:",
+        "Student check error:",
         checkError
       );
 
       alert(
-        "There was a problem checking the username."
+        "There was a problem checking the student."
       );
 
       setLoading(false);
-
       return;
     }
 
-    if (existingUser)
+    if (existingStudent)
     {
       alert(
-        "That username is already taken."
+        "A student with this name already exists."
       );
 
       setLoading(false);
-
       return;
     }
 
     /*
-     * Create the student in Supabase.
+     * Create the student.
      */
     const {
       data,
@@ -74,8 +71,6 @@ function Signup({
       .from("students")
       .insert([
         {
-          user_n: username,
-
           first_name: first,
 
           last_name: last,
@@ -98,23 +93,16 @@ function Signup({
       );
 
       alert(
-        "There was a problem creating the account."
+        "There was a problem creating the student."
       );
 
       setLoading(false);
-
       return;
     }
 
-    /*
-     * Convert the Supabase row into the
-     * format the rest of your React app uses.
-     */
     const user =
     {
       id: data.id,
-
-      userN: data.user_n,
 
       firstName: data.first_name,
 
@@ -180,22 +168,6 @@ function Signup({
             value={lastName}
             onChange={(e) =>
               setLastName(e.target.value)
-            }
-            required
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "10px",
-              boxSizing: "border-box",
-            }}
-          />
-
-          <input
-            type="text"
-            placeholder="Username"
-            value={userN}
-            onChange={(e) =>
-              setUserN(e.target.value)
             }
             required
             style={{
