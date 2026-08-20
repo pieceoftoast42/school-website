@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { supabase } from "../supabaseClient";
 
 function Login({
   setCurrentUser,
@@ -9,37 +10,121 @@ function Login({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [teacher, setTeacher] = useState("");
+  const [loading, setLoading] = useState(false);
 
 
-  const login = (e) =>
+  const login = async (e) =>
   {
     e.preventDefault();
 
-    const users =
-      JSON.parse(localStorage.getItem("users")) || [];
+    setLoading(true);
 
 
-    const match = users.find(
-      (u) =>
-        u.firstName.trim().toLowerCase() ===
-          firstName.trim().toLowerCase() &&
+    const formattedFirstName =
+      firstName.trim();
 
-        u.lastName.trim().toLowerCase() ===
-          lastName.trim().toLowerCase() &&
+    const formattedLastName =
+      lastName.trim();
 
-        u.teacher.trim().toLowerCase() ===
-          teacher.trim().toLowerCase()
-    );
+    const formattedTeacher =
+      teacher.trim().toUpperCase();
 
 
-    if (!match)
+    try
     {
-      alert("Student not found");
-      return;
+      /*
+       * Look for the student in the Supabase
+       * students table.
+       *
+       * ilike makes the search ignore capitalization.
+       *
+       * For example:
+       *
+       * john
+       * JOHN
+       * John
+       *
+       * will all match.
+       */
+      const { data, error } =
+        await supabase
+          .from("students")
+          .select("*")
+          .ilike(
+            "first_name",
+            formattedFirstName
+          )
+          .ilike(
+            "last_name",
+            formattedLastName
+          )
+          .ilike(
+            "teacher",
+            formattedTeacher
+          )
+          .limit(1)
+          .single();
+
+
+      /*
+       * If Supabase couldn't find the student,
+       * show an error.
+       */
+      if (error || !data)
+      {
+        console.error(error);
+
+        alert(
+          "Student not found. Please check your name and teacher."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+
+      /*
+       * Convert the Supabase database format
+       * into the format the rest of your React
+       * application currently uses.
+       */
+      const loggedInUser =
+      {
+        id: data.id,
+
+        firstName:
+          data.first_name,
+
+        lastName:
+          data.last_name,
+
+        teacher:
+          data.teacher,
+
+        parentInitials:
+          data.parent_initials,
+
+        readingMinutes:
+          data.reading_minutes || 0,
+      };
+
+
+      /*
+       * Send the student information back to App.jsx.
+       */
+      setCurrentUser(loggedInUser);
+    }
+    catch (error)
+    {
+      console.error(error);
+
+      alert(
+        "Something went wrong while logging in."
+      );
     }
 
 
-    setCurrentUser(match);
+    setLoading(false);
   };
 
 
@@ -149,7 +234,7 @@ function Login({
 
           <input
             type="text"
-            placeholder="Teacher"
+            placeholder="Teacher Name"
             required
             value={teacher}
             onChange={(e) =>
@@ -162,8 +247,11 @@ function Login({
           <button
             type="submit"
             style={styles.button}
+            disabled={loading}
           >
-            Login
+            {loading
+              ? "Logging In..."
+              : "Login"}
           </button>
 
         </form>
@@ -172,8 +260,9 @@ function Login({
         <button
           style={styles.switchBtn}
           onClick={switchToSignup}
+          disabled={loading}
         >
-          New Student? Sign Up
+          Don't have an account? Sign up
         </button>
 
 
@@ -183,6 +272,7 @@ function Login({
         <button
           style={styles.teacherBtn}
           onClick={switchToTeacherLogin}
+          disabled={loading}
         >
           Teacher Sign In
         </button>
