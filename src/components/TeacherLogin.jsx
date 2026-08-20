@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./Teach.css" ;
+import "./index.css" ;
 
 function TeacherLogin({
   switchToStudentLogin,
