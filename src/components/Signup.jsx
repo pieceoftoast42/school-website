@@ -6,14 +6,9 @@ function Signup({ setCurrentUser, switchToLogin })
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [teacher, setTeacher] = useState("");
+  const [password, setPassword] = useState("");
   const [parentInitials, setParentInitials] = useState("");
   const [loading, setLoading] = useState(false);
-
-
-  const formatTeacherName = (name) =>
-  {
-    return name.trim().toUpperCase();
-  };
 
 
   const signup = async (e) =>
@@ -23,61 +18,70 @@ function Signup({ setCurrentUser, switchToLogin })
     setLoading(true);
 
 
-    const formattedFirstName =
+    const cleanFirstName =
       firstName.trim();
 
-    const formattedLastName =
+    const cleanLastName =
       lastName.trim();
 
-    const formattedTeacher =
-      formatTeacherName(teacher);
+    const cleanTeacher =
+      teacher.trim().toUpperCase();
 
-    const formattedInitials =
+    const cleanInitials =
       parentInitials.trim().toUpperCase();
+
+
+
+    const internalEmail =
+      `${cleanFirstName.toLowerCase()}.${cleanLastName.toLowerCase()}@students.rootedinlearning.local`;
 
 
     try
     {
-      const { data: existingStudents, error: checkError } =
-        await supabase
-          .from("students")
-          .select("*")
-          .ilike("first_name", formattedFirstName)
-          .ilike("last_name", formattedLastName)
-          .ilike("teacher", formattedTeacher);
+
+      const { data: authData, error: authError } =
+        await supabase.auth.signUp({
+          email: internalEmail,
+          password: password,
+        });
 
 
-      if (checkError)
+      if (authError)
       {
-        console.error(checkError);
+        console.error(authError);
+
+        alert(authError.message);
+
+        setLoading(false);
+
+        return;
+      }
+
+
+
+      if (!authData.user)
+      {
         alert(
-          "There was a problem checking for the student."
+          "Account could not be created."
         );
+
         setLoading(false);
+
         return;
       }
 
 
-      if (
-        existingStudents &&
-        existingStudents.length > 0
-      )
-      {
-        alert("Student already exists.");
-        setLoading(false);
-        return;
-      }
 
-
-      const { data, error } =
+      const { data: studentData, error: studentError } =
         await supabase
           .from("students")
           .insert([
             {
-              first_name: formattedFirstName,
-              last_name: formattedLastName,
-              teacher: formattedTeacher,
-              parent_initials: formattedInitials,
+              auth_user_id: authData.user.id,
+              first_name: cleanFirstName,
+              last_name: cleanLastName,
+              teacher: cleanTeacher,
+              parent_initials: cleanInitials,
               reading_minutes: 0,
             },
           ])
@@ -85,37 +89,51 @@ function Signup({ setCurrentUser, switchToLogin })
           .single();
 
 
-      if (error)
+      if (studentError)
       {
-        console.error(error);
+        console.error(studentError);
+
+
+        await supabase.auth.signOut();
 
         alert(
-          "There was a problem creating the student account."
+          "Account was created, but the student profile could not be saved."
         );
 
         setLoading(false);
+
         return;
       }
 
 
+
       const newCurrentUser =
       {
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        teacher: data.teacher,
-        parentInitials: data.parent_initials,
-        readingMinutes: data.reading_minutes,
+        id: studentData.id,
+
+        authUserId:
+          authData.user.id,
+
+        firstName:
+          studentData.first_name,
+
+        lastName:
+          studentData.last_name,
+
+        teacher:
+          studentData.teacher,
+
+        parentInitials:
+          studentData.parent_initials,
+
+        readingMinutes:
+          studentData.reading_minutes,
       };
 
 
-      setCurrentUser(newCurrentUser);
-
-
-      setFirstName("");
-      setLastName("");
-      setTeacher("");
-      setParentInitials("");
+      setCurrentUser(
+        newCurrentUser
+      );
     }
     catch (error)
     {
@@ -203,7 +221,7 @@ function Signup({ setCurrentUser, switchToLogin })
       <div style={styles.card}>
 
         <h2 style={styles.heading}>
-          Create Student
+          Create Account
         </h2>
 
 
@@ -240,6 +258,19 @@ function Signup({ setCurrentUser, switchToLogin })
             value={teacher}
             onChange={(e) =>
               setTeacher(e.target.value)
+            }
+            style={styles.input}
+          />
+
+
+          <input
+            type="password"
+            placeholder="Password"
+            required
+            minLength="6"
+            value={password}
+            onChange={(e) =>
+              setPassword(e.target.value)
             }
             style={styles.input}
           />
