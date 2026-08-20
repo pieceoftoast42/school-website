@@ -7,7 +7,8 @@ function Login({
   switchToTeacherLogin
 })
 {
-  const [userN, setUserN] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [parentInitials, setParentInitials] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,13 +18,15 @@ function Login({
 
     setLoading(true);
 
-    const username = userN.trim();
+    const first = firstName.trim();
+    const last = lastName.trim();
     const initials = parentInitials.trim().toUpperCase();
 
     const { data, error } = await supabase
       .from("students")
       .select("*")
-      .eq("user_n", username)
+      .eq("first_name", first)
+      .eq("last_name", last)
       .eq("parent_initials", initials)
       .maybeSingle();
 
@@ -32,24 +35,22 @@ function Login({
       console.error("Login error:", error);
 
       alert("There was a problem logging in.");
-      setLoading(false);
 
+      setLoading(false);
       return;
     }
 
     if (!data)
     {
-      alert("Incorrect username or parent initials.");
-      setLoading(false);
+      alert("Incorrect name or parent initials.");
 
+      setLoading(false);
       return;
     }
 
     const user =
     {
       id: data.id,
-
-      userN: data.user_n,
 
       firstName: data.first_name,
 
@@ -86,6 +87,7 @@ function Login({
           boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
         }}
       >
+
         <h1 style={{ textAlign: "center" }}>
           Rooted in Learning
         </h1>
@@ -98,10 +100,26 @@ function Login({
 
           <input
             type="text"
-            placeholder="Username"
-            value={userN}
+            placeholder="First Name"
+            value={firstName}
             onChange={(e) =>
-              setUserN(e.target.value)
+              setFirstName(e.target.value)
+            }
+            required
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "15px",
+              boxSizing: "border-box",
+            }}
+          />
+
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={(e) =>
+              setLastName(e.target.value)
             }
             required
             style={{
