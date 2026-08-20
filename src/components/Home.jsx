@@ -1,23 +1,39 @@
 import React, { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
 
 function Home({ currentUser, setCurrentUser })
 {
   const [minutes, setMinutes] = useState("");
   const [parentInitials, setParentInitials] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const loadLeaderboard = () =>
+
+
+  const loadLeaderboard = async () =>
   {
-    const users =
-      JSON.parse(localStorage.getItem("users")) || [];
+    const { data, error } =
+      await supabase
+        .from("students")
+        .select("*")
+        .order("reading_minutes", {
+          ascending: false
+        });
 
-    const sortedUsers = [...users].sort(
-      (a, b) =>
-        (b.readingMinutes || 0) -
-        (a.readingMinutes || 0)
-    );
 
-    setLeaderboard(sortedUsers);
+    if (error)
+    {
+      console.error(error);
+
+      alert(
+        "Unable to load the reading leaderboard."
+      );
+
+      return;
+    }
+
+
+    setLeaderboard(data || []);
   };
 
 
@@ -27,97 +43,170 @@ function Home({ currentUser, setCurrentUser })
   }, []);
 
 
-  const changeMinutes = () =>
-  {
-    const amount = parseInt(minutes);
 
-    if (isNaN(amount) || amount === 0)
+  const updateMinutes = async (amount) =>
+  {
+    if (!currentUser)
     {
-      alert("Please enter a valid number of minutes.");
       return;
     }
 
 
-    // Parent initials are required for both
-    // adding and subtracting minutes.
     if (
-      parentInitials.toUpperCase() !==
-      currentUser.parentInitials.toUpperCase()
+      isNaN(amount) ||
+      amount === 0
+    )
+    {
+      alert(
+        "Please enter a valid number of minutes."
+      );
+
+      return;
+    }
+
+
+ 
+    if (
+      parentInitials.trim().toUpperCase() !==
+      currentUser.parentInitials
+        .trim()
+        .toUpperCase()
     )
     {
       alert("Incorrect parent initials.");
+
       return;
     }
 
 
-    const users =
-      JSON.parse(localStorage.getItem("users")) || [];
+    setLoading(true);
 
 
-    const currentMinutes =
-      currentUser.readingMinutes || 0;
-
-
-    const newTotal =
-      currentMinutes + amount;
-
-
-    // Prevent the total from going below zero.
-    if (newTotal < 0)
+    try
     {
-      alert(
-        "You cannot subtract more minutes than the student currently has."
-      );
-      return;
-    }
+
+      const newTotal =
+        Math.max(
+          0,
+          currentUser.readingMinutes + amount
+        );
 
 
-    const updatedUsers = users.map((user) =>
-    {
-      if (
-        user.firstName === currentUser.firstName &&
-        user.lastName === currentUser.lastName &&
-        user.teacher.toLowerCase() ===
-          currentUser.teacher.toLowerCase()
-      )
+
+      const { data, error } =
+        await supabase
+          .from("students")
+          .update({
+            reading_minutes: newTotal
+          })
+          .eq("id", currentUser.id)
+          .select()
+          .single();
+
+
+      if (error)
       {
-        return {
-          ...user,
-          readingMinutes: newTotal,
-        };
+        console.error(error);
+
+        alert(
+          "There was a problem updating your reading minutes."
+        );
+
+        setLoading(false);
+
+        return;
       }
 
-      return user;
-    });
 
 
-    localStorage.setItem(
-      "users",
-      JSON.stringify(updatedUsers)
-    );
+      const updatedCurrentUser =
+      {
+        ...currentUser,
+
+        readingMinutes:
+          data.reading_minutes,
+      };
 
 
-    const updatedCurrentUser =
+      setCurrentUser(
+        updatedCurrentUser
+      );
+
+
+
+      setMinutes("");
+      setParentInitials("");
+
+
+
+      await loadLeaderboard();
+    }
+    catch (error)
     {
-      ...currentUser,
-      readingMinutes: newTotal,
-    };
+      console.error(error);
+
+      alert(
+        "Something went wrong while updating your minutes."
+      );
+    }
 
 
-    setCurrentUser(updatedCurrentUser);
-
-
-    setMinutes("");
-    setParentInitials("");
-
-
-    loadLeaderboard();
+    setLoading(false);
   };
+
+
+
+  const addMinutes = () =>
+  {
+    const amount =
+      parseInt(minutes);
+
+
+    if (
+      isNaN(amount) ||
+      amount <= 0
+    )
+    {
+      alert(
+        "Please enter a positive number of minutes."
+      );
+
+      return;
+    }
+
+
+    updateMinutes(amount);
+  };
+
+
+
+  const subtractMinutes = () =>
+  {
+    const amount =
+      parseInt(minutes);
+
+
+    if (
+      isNaN(amount) ||
+      amount <= 0
+    )
+    {
+      alert(
+        "Please enter a positive number of minutes."
+      );
+
+      return;
+    }
+
+
+
+    updateMinutes(-amount);
+  };
+
 
 
   const logout = () =>
   {
-    localStorage.removeItem("currentUser");
     setCurrentUser(null);
   };
 
@@ -131,21 +220,34 @@ function Home({ currentUser, setCurrentUser })
       }}
     >
 
-      <h1 style={{ textAlign: "center" }}>
+      <h1
+        style={{
+          textAlign: "center"
+        }}
+      >
         Rooted in Learning:
         <br />
         Growing Minds, Growing Futures
       </h1>
 
 
-      <h2 style={{ textAlign: "center" }}>
+      <h2
+        style={{
+          textAlign: "center"
+        }}
+      >
         Welcome {currentUser.firstName}{" "}
         {currentUser.lastName}
       </h2>
 
 
-      <h3 style={{ textAlign: "center" }}>
-        Teacher: {currentUser.teacher.toUpperCase()}
+      <h3
+        style={{
+          textAlign: "center"
+        }}
+      >
+        Teacher:{" "}
+        {currentUser.teacher.toUpperCase()}
       </h3>
 
 
@@ -156,11 +258,12 @@ function Home({ currentUser, setCurrentUser })
           alignItems: "flex-start",
           gap: "50px",
           marginTop: "40px",
-          flexWrap: "wrap",
         }}
       >
 
-        {/* Reading Minutes Card */}
+        {/* =========================
+            READING MINUTES CARD
+        ========================== */}
 
         <div
           style={{
@@ -173,19 +276,28 @@ function Home({ currentUser, setCurrentUser })
           }}
         >
 
-          <h2 style={{ textAlign: "center" }}>
+          <h2
+            style={{
+              textAlign: "center"
+            }}
+          >
             Your Reading Minutes
           </h2>
 
 
-          <h1 style={{ textAlign: "center" }}>
+          <h1
+            style={{
+              textAlign: "center"
+            }}
+          >
             {currentUser.readingMinutes}
           </h1>
 
 
           <input
             type="number"
-            placeholder="Minutes Read"
+            min="1"
+            placeholder="Minutes"
             value={minutes}
             onChange={(e) =>
               setMinutes(e.target.value)
@@ -193,22 +305,10 @@ function Home({ currentUser, setCurrentUser })
             style={{
               width: "100%",
               padding: "10px",
-              marginBottom: "10px",
+              marginBottom: "15px",
               boxSizing: "border-box",
             }}
           />
-
-
-          <p
-            style={{
-              fontSize: "0.85rem",
-              color: "#666",
-              marginTop: "0",
-            }}
-          >
-            Enter a positive number to add minutes
-            or a negative number to subtract minutes.
-          </p>
 
 
           <input
@@ -231,21 +331,41 @@ function Home({ currentUser, setCurrentUser })
 
 
           <button
-            onClick={changeMinutes}
+            onClick={addMinutes}
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "10px",
+              cursor: "pointer",
+              marginBottom: "10px",
+            }}
+          >
+            {loading
+              ? "Updating..."
+              : "Add Minutes"}
+          </button>
+
+
+          <button
+            onClick={subtractMinutes}
+            disabled={loading}
             style={{
               width: "100%",
               padding: "10px",
               cursor: "pointer",
             }}
           >
-            Update Minutes
+            {loading
+              ? "Updating..."
+              : "Subtract Minutes"}
           </button>
 
         </div>
 
 
-
-        {/* Leaderboard */}
+        {/* =========================
+            LEADERBOARD
+        ========================== */}
 
         <div
           style={{
@@ -255,11 +375,14 @@ function Home({ currentUser, setCurrentUser })
             borderRadius: "12px",
             boxShadow:
               "0 2px 8px rgba(0,0,0,0.15)",
-            overflowX: "auto",
           }}
         >
 
-          <h2 style={{ textAlign: "center" }}>
+          <h2
+            style={{
+              textAlign: "center"
+            }}
+          >
             Reading Leaderboard
           </h2>
 
@@ -301,7 +424,7 @@ function Home({ currentUser, setCurrentUser })
               {leaderboard.map(
                 (student, index) => (
 
-                  <tr key={index}>
+                  <tr key={student.id}>
 
                     <td>
                       {index + 1}
@@ -309,19 +432,17 @@ function Home({ currentUser, setCurrentUser })
 
 
                     <td>
-                      {student.firstName}
+                      {student.first_name}
                     </td>
 
 
                     <td>
-                      {student.teacher
-                        ? student.teacher.toUpperCase()
-                        : ""}
+                      {student.teacher.toUpperCase()}
                     </td>
 
 
                     <td align="right">
-                      {student.readingMinutes || 0}
+                      {student.reading_minutes}
                     </td>
 
                   </tr>
@@ -338,8 +459,9 @@ function Home({ currentUser, setCurrentUser })
       </div>
 
 
-
-      {/* Logout */}
+      {/* =========================
+          LOGOUT
+      ========================== */}
 
       <button
         onClick={logout}
@@ -356,5 +478,6 @@ function Home({ currentUser, setCurrentUser })
     </div>
   );
 }
+
 
 export default Home;
