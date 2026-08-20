@@ -1,120 +1,114 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
 
-function TeacherDashboard({ setTeacherLoggedIn })
+function TeacherDashboard({ setCurrentUser })
 {
-  const [selectedTeacher, setSelectedTeacher] =
-    useState("All");
+  const [students, setStudents] = useState([]);
+  const [selectedTeacher, setSelectedTeacher] = useState("ALL");
+  const [loading, setLoading] = useState(true);
 
-  const [users, setUsers] = useState(
-    JSON.parse(localStorage.getItem("users")) || []
-  );
-
-
-  /*
-   * Create a unique list of teachers.
-   * Capitalization is ignored.
-   */
-  const teacherMap = {};
-
-  users.forEach((student) =>
+  const loadStudents = async () =>
   {
-    if (!student.teacher)
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .order("reading_minutes", {
+        ascending: false
+      });
+
+    if (error)
     {
+      console.error(error);
+
+      alert(
+        "Unable to load the student scoreboard."
+      );
+
+      setLoading(false);
       return;
     }
 
-    const teacherName =
-      student.teacher.trim();
-
-    const teacherKey =
-      teacherName.toLowerCase();
-
-    if (!teacherMap[teacherKey])
-    {
-      teacherMap[teacherKey] =
-        teacherName;
-    }
-  });
+    setStudents(data || []);
+    setLoading(false);
+  };
 
 
-  const teachers =
-    Object.values(teacherMap).sort(
-      (a, b) =>
-        a.toLowerCase().localeCompare(
-          b.toLowerCase()
-        )
-    );
+
+  useEffect(() =>
+  {
+    loadStudents();
+  }, []);
 
 
-  /*
-   * Filter students by teacher.
-   */
+
+  const teachers = [
+    ...new Set(
+      students.map((student) =>
+        student.teacher
+          ? student.teacher.toUpperCase()
+          : ""
+      )
+    )
+  ].filter(Boolean).sort();
+
+
+
   const filteredStudents =
-    selectedTeacher === "All"
-      ? users
-      : users.filter(
+    selectedTeacher === "ALL"
+      ? students
+      : students.filter(
           (student) =>
-            student.teacher &&
-            student.teacher
-              .trim()
-              .toLowerCase() ===
-              selectedTeacher
-                .trim()
-                .toLowerCase()
+            student.teacher.toUpperCase() ===
+            selectedTeacher
         );
 
 
-  /*
-   * Sort highest minutes first.
-   */
-  const sortedStudents =
-    [...filteredStudents].sort(
-      (a, b) =>
-        (b.readingMinutes || 0) -
-        (a.readingMinutes || 0)
-    );
 
-
-  /*
-   * Delete a student.
-   */
-  const deleteStudent = (studentToDelete) =>
+  const deleteStudent = async (student) =>
   {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete ${studentToDelete.firstName} ${studentToDelete.lastName}?`
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${student.first_name} ${student.last_name}?`
     );
 
-
-    if (!confirmDelete)
+    if (!confirmed)
     {
       return;
     }
 
 
-    const updatedUsers = users.filter(
-      (student) =>
-        !(
-          student.firstName ===
-            studentToDelete.firstName &&
-          student.lastName ===
-            studentToDelete.lastName &&
-          student.teacher
-            .trim()
-            .toLowerCase() ===
-            studentToDelete.teacher
-              .trim()
-              .toLowerCase()
-        )
+    const { error } = await supabase
+      .from("students")
+      .delete()
+      .eq("id", student.id);
+
+
+    if (error)
+    {
+      console.error(error);
+
+      alert(
+        "There was a problem deleting the student."
+      );
+
+      return;
+    }
+
+
+
+    setStudents((currentStudents) =>
+      currentStudents.filter(
+        (currentStudent) =>
+          currentStudent.id !== student.id
+      )
     );
+  };
 
 
-    localStorage.setItem(
-      "users",
-      JSON.stringify(updatedUsers)
-    );
-
-
-    setUsers(updatedUsers);
+  const logout = () =>
+  {
+    setCurrentUser(null);
   };
 
 
@@ -124,88 +118,59 @@ function TeacherDashboard({ setTeacherLoggedIn })
         minHeight: "100vh",
         backgroundColor: "#f5f5f5",
         padding: "40px",
-        boxSizing: "border-box",
       }}
     >
 
-      <h1
-        style={{
-          textAlign: "center",
-          marginBottom: "10px",
-        }}
-      >
+      <h1 style={{ textAlign: "center" }}>
         Teacher Dashboard
       </h1>
 
 
-      <h2
-        style={{
-          textAlign: "center",
-          marginBottom: "30px",
-        }}
-      >
+      <h2 style={{ textAlign: "center" }}>
         Reading Scoreboard
       </h2>
 
 
-
-      {/* Teacher Dropdown */}
+      {/* Teacher Filter */}
 
       <div
         style={{
-          backgroundColor: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          width: "400px",
-          maxWidth: "90%",
-          margin: "0 auto 30px auto",
-          textAlign: "center",
-          boxShadow:
-            "0 2px 8px rgba(0,0,0,0.15)",
-          boxSizing: "border-box",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "30px",
         }}
       >
 
         <label>
-          <strong>
-            Sort by Teacher:
-          </strong>
+          Sort by Teacher:
         </label>
-
-
-        <br />
 
 
         <select
           value={selectedTeacher}
           onChange={(e) =>
-            setSelectedTeacher(
-              e.target.value
-            )
+            setSelectedTeacher(e.target.value)
           }
           style={{
-            marginTop: "10px",
-            padding: "10px",
-            width: "100%",
-            fontSize: "1rem",
-            boxSizing: "border-box",
+            padding: "8px",
+            minWidth: "200px",
           }}
         >
 
-          <option value="All">
+          <option value="ALL">
             ALL TEACHERS
           </option>
 
 
           {teachers.map((teacher) => (
-
             <option
               key={teacher}
               value={teacher}
             >
-              {teacher.toUpperCase()}
+              {teacher}
             </option>
-
           ))}
 
         </select>
@@ -213,227 +178,248 @@ function TeacherDashboard({ setTeacherLoggedIn })
       </div>
 
 
-
       {/* Scoreboard */}
 
       <div
         style={{
-          backgroundColor: "white",
+          background: "white",
           padding: "30px",
           maxWidth: "1000px",
           margin: "0 auto",
           borderRadius: "12px",
           boxShadow:
             "0 2px 8px rgba(0,0,0,0.15)",
-          overflowX: "auto",
         }}
       >
 
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-          }}
-        >
+        {loading ? (
 
-          <thead>
+          <h3 style={{ textAlign: "center" }}>
+            Loading students...
+          </h3>
 
-            <tr>
+        ) : (
 
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "left",
-                  borderBottom:
-                    "2px solid #ddd",
-                }}
-              >
-                #
-              </th>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+            }}
+          >
 
+            <thead>
 
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "left",
-                  borderBottom:
-                    "2px solid #ddd",
-                }}
-              >
-                Student
-              </th>
+              <tr>
+
+                <th
+                  align="left"
+                  style={{
+                    padding: "10px",
+                    borderBottom:
+                      "1px solid #ccc",
+                  }}
+                >
+                  #
+                </th>
 
 
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "left",
-                  borderBottom:
-                    "2px solid #ddd",
-                }}
-              >
-                Teacher
-              </th>
+                <th
+                  align="left"
+                  style={{
+                    padding: "10px",
+                    borderBottom:
+                      "1px solid #ccc",
+                  }}
+                >
+                  First Name
+                </th>
 
 
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "right",
-                  borderBottom:
-                    "2px solid #ddd",
-                }}
-              >
-                Reading Minutes
-              </th>
+                <th
+                  align="left"
+                  style={{
+                    padding: "10px",
+                    borderBottom:
+                      "1px solid #ccc",
+                  }}
+                >
+                  Last Name
+                </th>
 
 
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "center",
-                  borderBottom:
-                    "2px solid #ddd",
-                }}
-              >
-                Actions
-              </th>
-
-            </tr>
-
-          </thead>
+                <th
+                  align="left"
+                  style={{
+                    padding: "10px",
+                    borderBottom:
+                      "1px solid #ccc",
+                  }}
+                >
+                  Teacher
+                </th>
 
 
-          <tbody>
-
-            {sortedStudents.map(
-              (student, index) => (
-
-                <tr key={index}>
-
-                  <td
-                    style={{
-                      padding: "12px",
-                      borderBottom:
-                        "1px solid #ddd",
-                    }}
-                  >
-                    {index + 1}
-                  </td>
+                <th
+                  align="right"
+                  style={{
+                    padding: "10px",
+                    borderBottom:
+                      "1px solid #ccc",
+                  }}
+                >
+                  Reading Minutes
+                </th>
 
 
-                  <td
-                    style={{
-                      padding: "12px",
-                      borderBottom:
-                        "1px solid #ddd",
-                    }}
-                  >
-                    {student.firstName}{" "}
-                    {student.lastName}
-                  </td>
+                <th
+                  align="center"
+                  style={{
+                    padding: "10px",
+                    borderBottom:
+                      "1px solid #ccc",
+                  }}
+                >
+                  Actions
+                </th>
 
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {filteredStudents.length === 0 ? (
+
+                <tr>
 
                   <td
+                    colSpan="6"
+                    align="center"
                     style={{
-                      padding: "12px",
-                      borderBottom:
-                        "1px solid #ddd",
+                      padding: "20px",
                     }}
                   >
-                    {student.teacher
-                      ? student.teacher.toUpperCase()
-                      : "UNKNOWN"}
-                  </td>
-
-
-                  <td
-                    style={{
-                      padding: "12px",
-                      borderBottom:
-                        "1px solid #ddd",
-                      textAlign: "right",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {student.readingMinutes || 0}
-                  </td>
-
-
-                  <td
-                    style={{
-                      padding: "12px",
-                      borderBottom:
-                        "1px solid #ddd",
-                      textAlign: "center",
-                    }}
-                  >
-
-                    <button
-                      onClick={() =>
-                        deleteStudent(student)
-                      }
-                      style={{
-                        padding:
-                          "6px 12px",
-                        cursor: "pointer",
-                        backgroundColor:
-                          "#d9534f",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "5px",
-                      }}
-                    >
-                      Delete
-                    </button>
-
+                    No students found.
                   </td>
 
                 </tr>
 
-              )
-            )}
+              ) : (
 
-          </tbody>
+                filteredStudents.map(
+                  (student, index) => (
 
-        </table>
+                    <tr key={student.id}>
+
+                      <td
+                        style={{
+                          padding: "10px",
+                        }}
+                      >
+                        {index + 1}
+                      </td>
 
 
-        {sortedStudents.length === 0 && (
+                      <td
+                        style={{
+                          padding: "10px",
+                        }}
+                      >
+                        {student.first_name}
+                      </td>
 
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: "20px",
-            }}
-          >
-            No students found.
-          </p>
+
+                      <td
+                        style={{
+                          padding: "10px",
+                        }}
+                      >
+                        {student.last_name}
+                      </td>
+
+
+                      <td
+                        style={{
+                          padding: "10px",
+                        }}
+                      >
+                        {student.teacher.toUpperCase()}
+                      </td>
+
+
+                      <td
+                        align="right"
+                        style={{
+                          padding: "10px",
+                        }}
+                      >
+                        {student.reading_minutes}
+                      </td>
+
+
+                      <td
+                        align="center"
+                        style={{
+                          padding: "10px",
+                        }}
+                      >
+
+                        <button
+                          onClick={() =>
+                            deleteStudent(student)
+                          }
+                          style={{
+                            padding:
+                              "6px 12px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Delete
+                        </button>
+
+                      </td>
+
+                    </tr>
+
+                  )
+                )
+
+              )}
+
+            </tbody>
+
+          </table>
 
         )}
 
       </div>
 
 
+      {/* Refresh */}
+
+      <button
+        onClick={loadStudents}
+        style={{
+          display: "block",
+          margin: "25px auto 10px",
+          padding: "10px 25px",
+          cursor: "pointer",
+        }}
+      >
+        Refresh Scoreboard
+      </button>
+
 
       {/* Logout */}
 
       <button
-        onClick={() =>
-        {
-          setTeacherLoggedIn(false);
-          setSelectedTeacher("All");
-        }}
+        onClick={logout}
         style={{
           display: "block",
-          margin: "30px auto",
+          margin: "10px auto",
           padding: "10px 40px",
           cursor: "pointer",
-          border: "none",
-          borderRadius: "6px",
-          backgroundColor: "#333",
-          color: "white",
-          fontSize: "1rem",
         }}
       >
         Logout
