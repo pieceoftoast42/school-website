@@ -9,7 +9,8 @@ function Login({
 {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [teacher, setTeacher] = useState("");
+  const [password, setPassword] = useState("");
+  const [parentInitials, setParentInitials] = useState("");
   const [loading, setLoading] = useState(false);
 
 
@@ -20,49 +21,89 @@ function Login({
     setLoading(true);
 
 
-    const formattedFirstName =
+    const cleanFirstName =
       firstName.trim();
 
-    const formattedLastName =
+    const cleanLastName =
       lastName.trim();
 
-    const formattedTeacher =
-      teacher.trim().toUpperCase();
+    const cleanInitials =
+      parentInitials.trim().toUpperCase();
+
+
+
+    const internalEmail =
+      `${cleanFirstName.toLowerCase()}.${cleanLastName.toLowerCase()}@students.rootedinlearning.local`;
 
 
     try
     {
 
-      const { data, error } =
-        await supabase
-          .from("students")
-          .select("*")
-          .ilike(
-            "first_name",
-            formattedFirstName
-          )
-          .ilike(
-            "last_name",
-            formattedLastName
-          )
-          .ilike(
-            "teacher",
-            formattedTeacher
-          )
-          .limit(1)
-          .single();
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: internalEmail,
+          password: password,
+        });
 
 
-
-      if (error || !data)
+      if (authError)
       {
-        console.error(error);
+        console.error(authError);
 
         alert(
-          "Student not found. Please check your name and teacher."
+          "Invalid name or password."
         );
 
         setLoading(false);
+
+        return;
+      }
+
+
+
+      const { data: studentData, error: studentError } =
+        await supabase
+          .from("students")
+          .select("*")
+          .eq(
+            "auth_user_id",
+            authData.user.id
+          )
+          .single();
+
+
+      if (studentError || !studentData)
+      {
+        console.error(studentError);
+
+        alert(
+          "Student profile could not be found."
+        );
+
+        await supabase.auth.signOut();
+
+        setLoading(false);
+
+        return;
+      }
+
+
+
+      if (
+        cleanInitials !==
+        studentData.parent_initials
+          .trim()
+          .toUpperCase()
+      )
+      {
+        alert(
+          "Incorrect parent initials."
+        );
+
+        await supabase.auth.signOut();
+
+        setLoading(false);
+
         return;
       }
 
@@ -70,26 +111,31 @@ function Login({
 
       const loggedInUser =
       {
-        id: data.id,
+        id: studentData.id,
+
+        authUserId:
+          authData.user.id,
 
         firstName:
-          data.first_name,
+          studentData.first_name,
 
         lastName:
-          data.last_name,
+          studentData.last_name,
 
         teacher:
-          data.teacher,
+          studentData.teacher,
 
         parentInitials:
-          data.parent_initials,
+          studentData.parent_initials,
 
         readingMinutes:
-          data.reading_minutes || 0,
+          studentData.reading_minutes,
       };
 
 
-      setCurrentUser(loggedInUser);
+      setCurrentUser(
+        loggedInUser
+      );
     }
     catch (error)
     {
@@ -180,7 +226,9 @@ function Login({
 
       <div style={styles.authCard}>
 
-        <h2>Student Login</h2>
+        <h2>
+          Student Login
+        </h2>
 
 
         <form onSubmit={login}>
@@ -210,12 +258,27 @@ function Login({
 
 
           <input
-            type="text"
-            placeholder="Teacher Name"
+            type="password"
+            placeholder="Password"
             required
-            value={teacher}
+            value={password}
             onChange={(e) =>
-              setTeacher(e.target.value)
+              setPassword(e.target.value)
+            }
+            style={styles.input}
+          />
+
+
+          <input
+            type="text"
+            placeholder="Parent Initials"
+            required
+            maxLength="3"
+            value={parentInitials}
+            onChange={(e) =>
+              setParentInitials(
+                e.target.value.toUpperCase()
+              )
             }
             style={styles.input}
           />
