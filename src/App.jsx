@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
 import TeacherLogin from "./components/TeacherLogin";
 import TeacherDashboard from "./components/TeacherDashboard";
-
-import { supabase } from "./supabaseClient";
 
 
 function App()
@@ -17,130 +15,11 @@ function App()
   const [page, setPage] =
     useState("login");
 
-  const [loading, setLoading] =
-    useState(true);
-
-
-
-  const loadStudent = async (authUser) =>
-  {
-    if (!authUser)
-    {
-      setCurrentUser(null);
-      setLoading(false);
-      return;
-    }
-
-
-    const { data, error } =
-      await supabase
-        .from("students")
-        .select("*")
-        .eq(
-          "auth_user_id",
-          authUser.id
-        )
-        .single();
-
-
-    if (error || !data)
-    {
-      console.error(error);
-
-      setCurrentUser(null);
-      setLoading(false);
-
-      return;
-    }
-
-
-    setCurrentUser({
-      id: data.id,
-
-      authUserId:
-        authUser.id,
-
-      firstName:
-        data.first_name,
-
-      lastName:
-        data.last_name,
-
-      teacher:
-        data.teacher,
-
-      parentInitials:
-        data.parent_initials,
-
-      readingMinutes:
-        data.reading_minutes,
-    });
-
-
-    setPage("home");
-    setLoading(false);
-  };
-
-
-
-  useEffect(() =>
-  {
-    const checkSession = async () =>
-    {
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
-
-
-      if (session)
-      {
-        await loadStudent(
-          session.user
-        );
-      }
-      else
-      {
-        setLoading(false);
-      }
-    };
-
-
-    checkSession();
-
-
-
-    const {
-      data: authListener
-    } = supabase.auth.onAuthStateChange(
-      async (_event, session) =>
-      {
-        if (session)
-        {
-          await loadStudent(
-            session.user
-          );
-        }
-        else
-        {
-          setCurrentUser(null);
-        }
-      }
-    );
-
-
-    return () =>
-    {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-
 
   const switchToSignup = () =>
   {
     setPage("signup");
   };
-
 
 
   const switchToLogin = () =>
@@ -149,12 +28,10 @@ function App()
   };
 
 
-
   const switchToTeacherLogin = () =>
   {
     setPage("teacherLogin");
   };
-
 
 
   const switchToStudentLogin = () =>
@@ -163,26 +40,15 @@ function App()
   };
 
 
-
-  if (loading)
+  const switchToTeacherDashboard = () =>
   {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <h2>
-          Loading...
-        </h2>
-      </div>
-    );
-  }
+    setPage("teacherDashboard");
+  };
 
 
+  /*
+   * Student Home
+   */
 
   if (
     currentUser &&
@@ -198,6 +64,9 @@ function App()
   }
 
 
+  /*
+   * Teacher Dashboard
+   */
 
   if (
     page === "teacherDashboard"
@@ -206,11 +75,17 @@ function App()
     return (
       <TeacherDashboard
         setCurrentUser={setCurrentUser}
+        switchToStudentLogin={
+          switchToStudentLogin
+        }
       />
     );
   }
 
 
+  /*
+   * Teacher Login
+   */
 
   if (
     page === "teacherLogin"
@@ -222,16 +97,21 @@ function App()
           switchToStudentLogin
         }
 
-        switchToTeacherDashboard={() =>
-          setPage("teacherDashboard")
+        switchToTeacherDashboard={
+          switchToTeacherDashboard
         }
       />
     );
   }
 
 
+  /*
+   * Student Signup
+   */
 
-  if (page === "signup")
+  if (
+    page === "signup"
+  )
   {
     return (
       <Signup
@@ -239,6 +119,7 @@ function App()
           (user) =>
           {
             setCurrentUser(user);
+
             setPage("home");
           }
         }
@@ -251,6 +132,9 @@ function App()
   }
 
 
+  /*
+   * Student Login
+   */
 
   return (
     <Login
@@ -258,6 +142,7 @@ function App()
         (user) =>
         {
           setCurrentUser(user);
+
           setPage("home");
         }
       }
