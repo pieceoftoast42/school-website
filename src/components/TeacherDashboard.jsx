@@ -1,23 +1,50 @@
-import React, { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
-import "./Teach.css" ;
+import React, {
+  useEffect,
+  useState
+} from "react";
 
-function TeacherDashboard({ setCurrentUser })
+import { supabase } from "../supabaseClient";
+
+import "./Teach.css";
+
+
+function TeacherDashboard({
+  setCurrentUser,
+  switchToStudentLogin
+})
 {
-  const [students, setStudents] = useState([]);
-  const [selectedTeacher, setSelectedTeacher] = useState("ALL");
-  const [loading, setLoading] = useState(true);
+  const [students, setStudents] =
+    useState([]);
+
+  const [selectedTeacher, setSelectedTeacher] =
+    useState("ALL");
+
+  const [loading, setLoading] =
+    useState(true);
+
+
+  /*
+   * Load students from Supabase
+   */
 
   const loadStudents = async () =>
   {
     setLoading(true);
 
-    const { data, error } = await supabase
+
+    const {
+      data,
+      error
+    } = await supabase
       .from("students")
       .select("*")
-      .order("reading_minutes", {
-        ascending: false
-      });
+      .order(
+        "reading_minutes",
+        {
+          ascending: false
+        }
+      );
+
 
     if (error)
     {
@@ -28,14 +55,22 @@ function TeacherDashboard({ setCurrentUser })
       );
 
       setLoading(false);
+
       return;
     }
 
-    setStudents(data || []);
+
+    setStudents(
+      data || []
+    );
+
     setLoading(false);
   };
 
 
+  /*
+   * Load students when dashboard opens
+   */
 
   useEffect(() =>
   {
@@ -43,35 +78,52 @@ function TeacherDashboard({ setCurrentUser })
   }, []);
 
 
+  /*
+   * Get all available teachers
+   */
 
   const teachers = [
     ...new Set(
-      students.map((student) =>
-        student.teacher
-          ? student.teacher.toUpperCase()
-          : ""
+      students.map(
+        (student) =>
+          student.teacher
+            ? student.teacher.toUpperCase()
+            : ""
       )
     )
-  ].filter(Boolean).sort();
+  ]
+    .filter(Boolean)
+    .sort();
 
 
+  /*
+   * Filter students by teacher
+   */
 
   const filteredStudents =
     selectedTeacher === "ALL"
       ? students
       : students.filter(
           (student) =>
+            student.teacher &&
             student.teacher.toUpperCase() ===
-            selectedTeacher
+              selectedTeacher
         );
 
 
+  /*
+   * Delete student
+   */
 
-  const deleteStudent = async (student) =>
+  const deleteStudent = async (
+    student
+  ) =>
   {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${student.first_name} ${student.last_name}?`
-    );
+    const confirmed =
+      window.confirm(
+        `Are you sure you want to delete ${student.first_name} ${student.last_name}?`
+      );
+
 
     if (!confirmed)
     {
@@ -79,10 +131,15 @@ function TeacherDashboard({ setCurrentUser })
     }
 
 
-    const { error } = await supabase
+    const {
+      error
+    } = await supabase
       .from("students")
       .delete()
-      .eq("id", student.id);
+      .eq(
+        "id",
+        student.id
+      );
 
 
     if (error)
@@ -97,19 +154,26 @@ function TeacherDashboard({ setCurrentUser })
     }
 
 
-
-    setStudents((currentStudents) =>
-      currentStudents.filter(
-        (currentStudent) =>
-          currentStudent.id !== student.id
-      )
+    setStudents(
+      (currentStudents) =>
+        currentStudents.filter(
+          (currentStudent) =>
+            currentStudent.id !==
+            student.id
+        )
     );
   };
 
 
+  /*
+   * Teacher logout
+   */
+
   const logout = () =>
   {
     setCurrentUser(null);
+
+    switchToStudentLogin();
   };
 
 
@@ -122,12 +186,20 @@ function TeacherDashboard({ setCurrentUser })
       }}
     >
 
-      <h1 style={{ textAlign: "center" }}>
+      <h1
+        style={{
+          textAlign: "center"
+        }}
+      >
         Teacher Dashboard
       </h1>
 
 
-      <h2 style={{ textAlign: "center" }}>
+      <h2
+        style={{
+          textAlign: "center"
+        }}
+      >
         Reading Scoreboard
       </h2>
 
@@ -152,7 +224,9 @@ function TeacherDashboard({ setCurrentUser })
         <select
           value={selectedTeacher}
           onChange={(e) =>
-            setSelectedTeacher(e.target.value)
+            setSelectedTeacher(
+              e.target.value
+            )
           }
           style={{
             padding: "8px",
@@ -165,14 +239,16 @@ function TeacherDashboard({ setCurrentUser })
           </option>
 
 
-          {teachers.map((teacher) => (
-            <option
-              key={teacher}
-              value={teacher}
-            >
-              {teacher}
-            </option>
-          ))}
+          {teachers.map(
+            (teacher) => (
+              <option
+                key={teacher}
+                value={teacher}
+              >
+                {teacher}
+              </option>
+            )
+          )}
 
         </select>
 
@@ -195,7 +271,11 @@ function TeacherDashboard({ setCurrentUser })
 
         {loading ? (
 
-          <h3 style={{ textAlign: "center" }}>
+          <h3
+            style={{
+              textAlign: "center"
+            }}
+          >
             Loading students...
           </h3>
 
@@ -290,7 +370,8 @@ function TeacherDashboard({ setCurrentUser })
 
             <tbody>
 
-              {filteredStudents.length === 0 ? (
+              {filteredStudents.length ===
+              0 ? (
 
                 <tr>
 
@@ -309,9 +390,16 @@ function TeacherDashboard({ setCurrentUser })
               ) : (
 
                 filteredStudents.map(
-                  (student, index) => (
+                  (
+                    student,
+                    index
+                  ) => (
 
-                    <tr key={student.id}>
+                    <tr
+                      key={
+                        student.id
+                      }
+                    >
 
                       <td
                         style={{
@@ -345,7 +433,9 @@ function TeacherDashboard({ setCurrentUser })
                           padding: "10px",
                         }}
                       >
-                        {student.teacher.toUpperCase()}
+                        {student.teacher
+                          ? student.teacher.toUpperCase()
+                          : ""}
                       </td>
 
 
@@ -355,7 +445,9 @@ function TeacherDashboard({ setCurrentUser })
                           padding: "10px",
                         }}
                       >
-                        {student.reading_minutes}
+                        {
+                          student.reading_minutes
+                        }
                       </td>
 
 
@@ -368,12 +460,15 @@ function TeacherDashboard({ setCurrentUser })
 
                         <button
                           onClick={() =>
-                            deleteStudent(student)
+                            deleteStudent(
+                              student
+                            )
                           }
                           style={{
                             padding:
                               "6px 12px",
-                            cursor: "pointer",
+                            cursor:
+                              "pointer",
                           }}
                         >
                           Delete
@@ -400,12 +495,17 @@ function TeacherDashboard({ setCurrentUser })
       {/* Refresh */}
 
       <button
-        onClick={loadStudents}
+        onClick={
+          loadStudents
+        }
         style={{
           display: "block",
-          margin: "25px auto 10px",
-          padding: "10px 25px",
-          cursor: "pointer",
+          margin:
+            "25px auto 10px",
+          padding:
+            "10px 25px",
+          cursor:
+            "pointer",
         }}
       >
         Refresh Scoreboard
@@ -429,5 +529,6 @@ function TeacherDashboard({ setCurrentUser })
     </div>
   );
 }
+
 
 export default TeacherDashboard;
